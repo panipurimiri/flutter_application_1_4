@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'btc_price_card.dart';
 import 'survey_section.dart';
 import 'buy.dart';
+import 'mesh_background.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
 
@@ -30,22 +32,20 @@ class BtcDetailPage extends StatefulWidget {
 
 class _BtcDetailPageState extends State<BtcDetailPage> {
   int _navIndex = 2;
-  // kCoins[0]=XRP, kCoins[1]=BTC(初期), kCoins[2]=ETH
-  int _currentPage = 1;
-  int _previousPage = 1;
+  // kCoins[0]=BTC(初期), kCoins[1]=BAT, kCoins[2]=BCH, kCoins[3]=XRP
+  int _currentPage = 0;
 
   late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    // initialPage:1 で BTC を中央に、左(XRP)・右(ETH)が見切れる
-    _pageController = PageController(initialPage: 1, viewportFraction: 0.85);
+    // initialPage:0 で BTC を先頭に表示、右(BAT)が見切れる
+    _pageController = PageController(initialPage: 0, viewportFraction: 0.85);
     _pageController.addListener(() {
       final page = _pageController.page?.round() ?? 0;
       if (page != _currentPage) {
         setState(() {
-          _previousPage = _currentPage;
           _currentPage = page;
         });
       }
@@ -59,7 +59,6 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
   }
 
   CoinData get _coin => kCoins[_currentPage];
-  CoinData get _prevCoin => kCoins[_previousPage];
 
   @override
   Widget build(BuildContext context) {
@@ -67,37 +66,9 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
       extendBody: true,
       body: Stack(
         children: [
-          // ── 背景グラデーション（コイン切り替え時にアニメーション） ──
+          // ── 背景メッシュグラデーション（スワイプに完全同期） ──
           Positioned.fill(
-            child: TweenAnimationBuilder<double>(
-              key: ValueKey(_currentPage),
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeInOut,
-              builder: (context, t, _) {
-                final c1 = Color.lerp(
-                  _prevCoin.accentColor,
-                  _coin.accentColor,
-                  t,
-                )!;
-                final c2 = Color.lerp(
-                  _prevCoin.primaryColor,
-                  _coin.primaryColor,
-                  t,
-                )!;
-                // 上半分: コインカラーグラデーション
-                // 下半分: グレー（SurveySection と繋がる）
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [c1, c2],
-                    ),
-                  ),
-                );
-              },
-            ),
+            child: MeshBackground(pageController: _pageController),
           ),
 
           // ── コンテンツ ──
@@ -115,7 +86,7 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
                     child: Column(
                       children: [
                         // ── カードPageView（見切れ付き横スクロール） ──
-                        _buildChartSection(),
+                        _buildChartSection(context),
                         const SizedBox(height: 12),
 
                         // ページドット
@@ -147,7 +118,7 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
     );
   }
 
-  // 現物バッジ（右上）
+  // 現物バッジ（右上）: コインアイコン + 現物テキスト
   Widget _buildTopBadge() {
     return Align(
       alignment: Alignment.centerRight,
@@ -156,27 +127,11 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  '₿',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            Image.asset(
+              'assets/icons/header.png',
+              width: 36,
+              height: 36,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 2),
             const Text(
@@ -195,9 +150,17 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
   }
 
   // カードPageView（見切れ効果: viewportFraction=0.85, 内側padding 4px）
-  Widget _buildChartSection() {
+  // カード高さ = 画面高さから固定UI要素を除いた領域の約62%
+  Widget _buildChartSection(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final safeTop = MediaQuery.of(context).padding.top;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+    // 固定要素: 上部バッジ約60px + ドット約28px + ボトムエリア約162px
+    const fixedHeight = 60.0 + 28.0 + 162.0;
+    final cardHeight = (screenHeight - safeTop - safeBottom - fixedHeight)
+        .clamp(320.0, 600.0);
     return SizedBox(
-      height: 580,
+      height: cardHeight,
       child: PageView.builder(
         controller: _pageController,
         itemCount: kCoins.length,
@@ -391,27 +354,11 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
   // フローティングナビゲーションバー（Figma準拠）
   Widget _buildBottomNav(double bottomPadding) {
     const items = [
-      _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'ホーム'),
-      _NavItem(
-        icon: Icons.format_list_bulleted_outlined,
-        activeIcon: Icons.format_list_bulleted,
-        label: '銘柄一覧',
-      ),
-      _NavItem(
-        icon: Icons.currency_exchange_outlined,
-        activeIcon: Icons.currency_exchange,
-        label: '注文',
-      ),
-      _NavItem(
-        icon: Icons.savings_outlined,
-        activeIcon: Icons.savings,
-        label: '資産',
-      ),
-      _NavItem(
-        icon: Icons.grid_view_outlined,
-        activeIcon: Icons.grid_view,
-        label: 'メニュー',
-      ),
+      _NavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
+      _NavItem(asset: 'assets/icons/listsearch.svg', label: '銘柄一覧'),
+      _NavItem(asset: 'assets/icons/order.svg', label: '注文'),
+      _NavItem(asset: 'assets/icons/assets.svg', label: '資産'),
+      _NavItem(asset: 'assets/icons/Othermenu.svg', label: 'メニュー'),
     ];
 
     return Container(
@@ -482,12 +429,16 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           spacing: 2,
                           children: [
-                            Icon(
-                              isActive ? items[i].activeIcon : items[i].icon,
-                              size: 22,
-                              color: isActive
-                                  ? const Color(0xFFBF0000)
-                                  : const Color(0xFF4D4D4D),
+                            SvgPicture.asset(
+                              items[i].asset,
+                              width: 22,
+                              height: 22,
+                              colorFilter: ColorFilter.mode(
+                                isActive
+                                    ? const Color(0xFFBF0000)
+                                    : const Color(0xFF4D4D4D),
+                                BlendMode.srcIn,
+                              ),
                             ),
                             Text(
                               items[i].label,
@@ -530,12 +481,7 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
 }
 
 class _NavItem {
-  final IconData icon;
-  final IconData activeIcon;
+  final String asset;
   final String label;
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-  });
+  const _NavItem({required this.asset, required this.label});
 }

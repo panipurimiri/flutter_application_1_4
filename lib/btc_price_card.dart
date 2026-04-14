@@ -20,6 +20,7 @@ class CoinData {
   final String symbol;
   final String name;
   final String symbolChar;
+  final String iconAsset;
   final Color primaryColor;
   final Color accentColor;
   final double price;
@@ -31,6 +32,7 @@ class CoinData {
     required this.symbol,
     required this.name,
     required this.symbolChar,
+    required this.iconAsset,
     required this.primaryColor,
     required this.accentColor,
     required this.price,
@@ -51,63 +53,14 @@ const List<List<String>> kPeriodXLabels = [
 ];
 
 // ── コインリスト ─────────────────────────────────────────
-// [0] XRP / [1] BTC (初期表示) / [2] ETH
+// [0] BTC (初期表示) / [1] BAT / [2] BCH / [3] XRP
 final List<CoinData> kCoins = [
-  // ─── 0: XRP ─────────────────────────────────────────
-  CoinData(
-    symbol: 'XRP',
-    name: 'リップル',
-    symbolChar: 'X',
-    primaryColor: const Color(0xFF346AA9),
-    accentColor: const Color(0xFF5090CC),
-    price: 7834,
-    changePercent: 2.10,
-    lineData: const [
-      7400,
-      7450,
-      7420,
-      7480,
-      7500,
-      7550,
-      7520,
-      7580,
-      7600,
-      7650,
-      7620,
-      7680,
-      7700,
-      7750,
-      7720,
-      7780,
-      7800,
-      7850,
-      7820,
-      7880,
-      7900,
-      7850,
-      7820,
-      7834,
-    ],
-    candleData: const [
-      OhlcData(open: 7400, high: 7520, low: 7350, close: 7450),
-      OhlcData(open: 7450, high: 7560, low: 7400, close: 7520),
-      OhlcData(open: 7520, high: 7620, low: 7480, close: 7580),
-      OhlcData(open: 7580, high: 7690, low: 7550, close: 7650),
-      OhlcData(open: 7650, high: 7780, low: 7620, close: 7720),
-      OhlcData(open: 7720, high: 7820, low: 7680, close: 7780),
-      OhlcData(open: 7780, high: 7900, low: 7750, close: 7850),
-      OhlcData(open: 7850, high: 7960, low: 7820, close: 7900),
-      OhlcData(open: 7900, high: 7980, low: 7830, close: 7850),
-      OhlcData(open: 7850, high: 7920, low: 7790, close: 7820),
-      OhlcData(open: 7820, high: 7880, low: 7780, close: 7840),
-      OhlcData(open: 7840, high: 7870, low: 7800, close: 7834),
-    ],
-  ),
-  // ─── 1: BTC ─────────────────────────────────────────
+  // ─── 0: BTC ─────────────────────────────────────────
   CoinData(
     symbol: 'BTC',
     name: 'ビットコイン',
     symbolChar: '₿',
+    iconAsset: 'assets/icons/btc.png',
     primaryColor: const Color(0xFFF7931A),
     accentColor: const Color(0xFFFCC31F),
     price: 16845997,
@@ -153,53 +106,157 @@ final List<CoinData> kCoins = [
       OhlcData(open: 197800, high: 198500, low: 196000, close: 197200),
     ],
   ),
+  // ─── 1: BAT ─────────────────────────────────────────
   CoinData(
-    symbol: 'ETH',
-    name: 'イーサリアム',
-    symbolChar: 'Ξ',
-    primaryColor: const Color(0xFF627EEA),
-    accentColor: const Color(0xFF8FA4F0),
-    price: 285430,
-    changePercent: -1.23,
+    symbol: 'BAT',
+    name: 'ベーシックアテンション',
+    symbolChar: 'B',
+    iconAsset: 'assets/icons/bat.png',
+    primaryColor: const Color(0xFFE84142),
+    accentColor: const Color(0xFFF08384),
+    price: 25,
+    changePercent: 1.23,
     lineData: const [
-      290000,
-      289000,
-      287500,
-      286000,
-      284500,
-      283000,
-      282000,
-      281500,
-      281000,
-      280500,
-      281000,
-      282000,
-      283500,
-      285000,
-      286500,
-      285500,
-      284500,
-      285000,
-      286000,
-      285500,
-      285000,
-      284500,
-      285000,
-      285430,
+      23.5,
+      23.8,
+      23.6,
+      24.0,
+      24.2,
+      24.5,
+      24.3,
+      24.7,
+      24.9,
+      25.1,
+      24.8,
+      25.0,
+      25.2,
+      25.5,
+      25.3,
+      25.6,
+      25.4,
+      25.7,
+      25.5,
+      25.8,
+      25.6,
+      25.4,
+      25.2,
+      25.0,
     ],
     candleData: const [
-      OhlcData(open: 290000, high: 291000, low: 288000, close: 289000),
-      OhlcData(open: 289000, high: 289500, low: 286000, close: 286500),
-      OhlcData(open: 286500, high: 287500, low: 283500, close: 284000),
-      OhlcData(open: 284000, high: 285000, low: 281500, close: 282000),
-      OhlcData(open: 282000, high: 283000, low: 280200, close: 281000),
-      OhlcData(open: 281000, high: 283500, low: 280500, close: 283000),
-      OhlcData(open: 283000, high: 286000, low: 282500, close: 285500),
-      OhlcData(open: 285500, high: 287000, low: 284000, close: 285000),
-      OhlcData(open: 285000, high: 286500, low: 284000, close: 285500),
-      OhlcData(open: 285500, high: 286500, low: 284000, close: 284500),
-      OhlcData(open: 284500, high: 286000, low: 284000, close: 285200),
-      OhlcData(open: 285200, high: 286200, low: 284800, close: 285430),
+      OhlcData(open: 23.5, high: 24.0, low: 23.2, close: 23.8),
+      OhlcData(open: 23.8, high: 24.3, low: 23.6, close: 24.1),
+      OhlcData(open: 24.1, high: 24.6, low: 23.9, close: 24.4),
+      OhlcData(open: 24.4, high: 24.9, low: 24.2, close: 24.7),
+      OhlcData(open: 24.7, high: 25.2, low: 24.5, close: 25.0),
+      OhlcData(open: 25.0, high: 25.5, low: 24.8, close: 25.3),
+      OhlcData(open: 25.3, high: 25.8, low: 25.1, close: 25.6),
+      OhlcData(open: 25.6, high: 26.0, low: 25.4, close: 25.8),
+      OhlcData(open: 25.8, high: 26.1, low: 25.3, close: 25.5),
+      OhlcData(open: 25.5, high: 25.9, low: 25.1, close: 25.3),
+      OhlcData(open: 25.3, high: 25.6, low: 24.9, close: 25.1),
+      OhlcData(open: 25.1, high: 25.3, low: 24.8, close: 25.0),
+    ],
+  ),
+  // ─── 2: BCH ─────────────────────────────────────────
+  CoinData(
+    symbol: 'BCH',
+    name: 'ビットコインキャッシュ',
+    symbolChar: 'Ƀ',
+    iconAsset: 'assets/icons/bch.png',
+    primaryColor: const Color(0xFF0AC18E),
+    accentColor: const Color(0xFF5FD6B5),
+    price: 45230,
+    changePercent: -0.87,
+    lineData: const [
+      44500,
+      44800,
+      44600,
+      45000,
+      45200,
+      45500,
+      45300,
+      45600,
+      45800,
+      46000,
+      45700,
+      45900,
+      46100,
+      46300,
+      46000,
+      45800,
+      45600,
+      45400,
+      45200,
+      45000,
+      45100,
+      45300,
+      45200,
+      45230,
+    ],
+    candleData: const [
+      OhlcData(open: 44500, high: 45000, low: 44200, close: 44800),
+      OhlcData(open: 44800, high: 45300, low: 44600, close: 45100),
+      OhlcData(open: 45100, high: 45600, low: 44900, close: 45400),
+      OhlcData(open: 45400, high: 45900, low: 45200, close: 45700),
+      OhlcData(open: 45700, high: 46200, low: 45500, close: 46000),
+      OhlcData(open: 46000, high: 46400, low: 45700, close: 46200),
+      OhlcData(open: 46200, high: 46500, low: 45800, close: 46000),
+      OhlcData(open: 46000, high: 46200, low: 45500, close: 45700),
+      OhlcData(open: 45700, high: 45900, low: 45200, close: 45400),
+      OhlcData(open: 45400, high: 45600, low: 45000, close: 45200),
+      OhlcData(open: 45200, high: 45500, low: 45000, close: 45300),
+      OhlcData(open: 45300, high: 45500, low: 45100, close: 45230),
+    ],
+  ),
+  // ─── 3: XRP ─────────────────────────────────────────
+  CoinData(
+    symbol: 'XRP',
+    name: 'リップル',
+    symbolChar: 'X',
+    iconAsset: 'assets/icons/xrp.png',
+    primaryColor: const Color(0xFF00AAE4),
+    accentColor: const Color(0xFF4DC8F0),
+    price: 328,
+    changePercent: -1.54,
+    lineData: const [
+      310,
+      312,
+      315,
+      318,
+      316,
+      320,
+      322,
+      319,
+      321,
+      325,
+      323,
+      326,
+      328,
+      330,
+      327,
+      325,
+      323,
+      326,
+      329,
+      331,
+      328,
+      326,
+      327,
+      328,
+    ],
+    candleData: const [
+      OhlcData(open: 310, high: 318, low: 308, close: 315),
+      OhlcData(open: 315, high: 322, low: 313, close: 320),
+      OhlcData(open: 320, high: 326, low: 318, close: 323),
+      OhlcData(open: 323, high: 329, low: 321, close: 326),
+      OhlcData(open: 326, high: 333, low: 324, close: 330),
+      OhlcData(open: 330, high: 334, low: 326, close: 328),
+      OhlcData(open: 328, high: 332, low: 324, close: 325),
+      OhlcData(open: 325, high: 330, low: 322, close: 327),
+      OhlcData(open: 327, high: 333, low: 325, close: 331),
+      OhlcData(open: 331, high: 335, low: 327, close: 329),
+      OhlcData(open: 329, high: 332, low: 325, close: 327),
+      OhlcData(open: 327, high: 331, low: 325, close: 328),
     ],
   ),
 ];
@@ -258,20 +315,11 @@ class _CoinPriceCardState extends State<CoinPriceCard>
     final coin = widget.coin;
     return Container(
       width: double.infinity,
-      height: 470,
+      height: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 0),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Color(0x6BF1F1F1), blurRadius: 16),
-          BoxShadow(color: Color(0x99FFFFFF), blurRadius: 14),
-          BoxShadow(
-            color: Color(0x3F000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,11 +349,14 @@ class _CoinPriceCardState extends State<CoinPriceCard>
                             ),
                           );
                         } else {
+                          // 最初と最後のデータを比較してトレンドを判定
+                          final isRising =
+                              coin.lineData.last >= coin.lineData.first;
                           return CustomPaint(
                             painter: _LineChartPainter(
                               data: coin.lineData,
                               progress: _chartProgress.value,
-                              lineColor: coin.primaryColor,
+                              isRising: isRising,
                               xLabels: xLabels,
                             ),
                             size: Size(
@@ -340,28 +391,11 @@ class _CoinPriceCardState extends State<CoinPriceCard>
             crossAxisAlignment: CrossAxisAlignment.center,
             spacing: 6,
             children: [
-              // コインアイコン（グラデーション丸）
-              Container(
+              // コインアイコン
+              Image.asset(
+                coin.iconAsset,
                 width: 28,
                 height: 28,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [coin.accentColor, coin.primaryColor],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    coin.symbolChar,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -579,18 +613,24 @@ class _CoinPriceCardState extends State<CoinPriceCard>
 }
 
 // ── ラインチャート描画 ────────────────────────────────────
+// 上昇: ピンク (#FFA0B9 → #ED1B8B)、下降: グリーン (#B3D3A7 → #268703)
 class _LineChartPainter extends CustomPainter {
   final List<double> data;
   final double progress; // 0.0 - 1.0
-  final Color lineColor;
+  final bool isRising;
   final List<String> xLabels;
 
   const _LineChartPainter({
     required this.data,
     required this.progress,
-    required this.lineColor,
+    required this.isRising,
     required this.xLabels,
   });
+
+  static const _risingStart = Color(0xFFFFA0B9);
+  static const _risingEnd = Color(0xFFED1B8B);
+  static const _fallingStart = Color(0xFFB3D3A7);
+  static const _fallingEnd = Color(0xFF268703);
 
   static const double _leftMargin = 8;
   static const double _rightMargin = 52;
@@ -627,6 +667,10 @@ class _LineChartPainter extends CustomPainter {
     fillPath.lineTo(allPoints.first.dx, _topMargin + chartHeight);
     fillPath.close();
 
+    // トレンドに応じたライン色を決定
+    final lineStart = isRising ? _risingStart : _fallingStart;
+    final lineEnd = isRising ? _risingEnd : _fallingEnd;
+
     canvas.drawPath(
       fillPath,
       Paint()
@@ -634,13 +678,13 @@ class _LineChartPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            lineColor.withValues(alpha: 0.15),
-            lineColor.withValues(alpha: 0.0),
+            lineEnd.withValues(alpha: 0.18),
+            lineEnd.withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromLTWH(0, _topMargin, size.width, chartHeight)),
     );
 
-    // チャートライン
+    // チャートライン（左から右へのグラデーション）
     final linePath = Path()..moveTo(allPoints.first.dx, allPoints.first.dy);
     for (final p in allPoints.skip(1)) {
       linePath.lineTo(p.dx, p.dy);
@@ -648,7 +692,13 @@ class _LineChartPainter extends CustomPainter {
     canvas.drawPath(
       linePath,
       Paint()
-        ..color = lineColor
+        ..shader = LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [lineStart, lineEnd],
+        ).createShader(
+          Rect.fromLTWH(_leftMargin, 0, chartWidth, size.height),
+        )
         ..strokeWidth = 2.2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
@@ -770,7 +820,7 @@ class _LineChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(_LineChartPainter old) =>
       old.progress != progress ||
-      old.lineColor != lineColor ||
+      old.isRising != isRising ||
       old.xLabels != xLabels;
 }
 
