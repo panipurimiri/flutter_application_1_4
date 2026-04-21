@@ -47,5 +47,14 @@ flutter:
     - assets/icons/order.svg
     - assets/icons/assets.svg
     - assets/icons/Othermenu.svg
+    - assets/icons/wallet.png
+    - assets/icons/yen.png
+    - assets/icons/point.png
+    - assets/icons/in.png
+    - assets/icons/history.png
+    - "assets/icons/Order history.png"
+    - "assets/icons/Horizontal dots.png"
+    - "assets/icons/Chevron right.png"
+    - assets/icons/Help.png
     - assets/mp4/
     - assets/lottie/

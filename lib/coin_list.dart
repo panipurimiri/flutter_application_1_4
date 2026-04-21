@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'glass_bottom_nav.dart';
+import 'main.dart' show BtcDetailPage;
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
 const _hiraFont = TextStyle(fontFamily: _fontFamily);
@@ -434,7 +435,17 @@ class _CoinListPageState extends State<CoinListPage>
     return LiquidGlassBottomNav(
       selectedIndex: 1, // 銘柄一覧がアクティブ
       onTap: (i) {
-        if (i == 0 || i == 2) Navigator.pop(context);
+        if (i == 0) {
+          Navigator.pop(context);
+        } else if (i == 2) {
+          Navigator.push(context, PageRouteBuilder(
+            pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
+            transitionDuration: const Duration(milliseconds: 250),
+            reverseTransitionDuration: const Duration(milliseconds: 200),
+            transitionsBuilder: (ctx, anim, a2, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ));
+        }
       },
       items: items,
       bottomPadding: bottomPadding,
