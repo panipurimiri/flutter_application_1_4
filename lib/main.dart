@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'btc_price_card.dart';
 import 'survey_section.dart';
 import 'buy.dart';
+import 'coin_list.dart';
 import 'mesh_background.dart';
+import 'glass_bottom_nav.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
 
@@ -118,29 +119,32 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
     );
   }
 
-  // 現物バッジ（右上）: コインアイコン + 現物テキスト
+  // 現物バッジ（右上）: 半透明白丸アイコン + 現物テキスト
   Widget _buildTopBadge() {
     return Align(
       alignment: Alignment.centerRight,
       child: Padding(
-        padding: const EdgeInsets.only(right: 16, top: 8, bottom: 4),
+        padding: const EdgeInsets.only(right: 16, top: 6, bottom: 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 3,
           children: [
             Image.asset(
-              'assets/icons/header.png',
+              'assets/icons/Actual-2.png',
               width: 36,
               height: 36,
               fit: BoxFit.contain,
             ),
-            const SizedBox(height: 2),
             const Text(
               '現物',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 10,
                 fontFamily: _fontFamily,
                 fontWeight: FontWeight.w300,
+                height: 1,
               ),
             ),
           ],
@@ -198,17 +202,12 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
   }
 
   // ── ボトムエリア全体 ────────────────────────────────────
-  // レイアウト:
-  //   [売る/買いカード: 76px]
-  //   [gap: 20px]
-  //   [ナビゲーションピル: 62px]
-  //   [bottom gap: 16px + SafeArea]
   Widget _buildBottomArea(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     const buttonHeight = 76.0;
     const buttonNavGap = 8.0;
-    const navPillHeight = 62.0; // top padding 4 + items 58
-    const bottomGap = 16.0;
+    const navPillHeight = 58.0;
+    const bottomGap = 10.0;
 
     // 売買カード下端 → ナビ上端の距離
     const navTop = buttonHeight + buttonNavGap;
@@ -260,7 +259,7 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
               buttonColor: const Color(0xFFED6286),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const BuyPage()),
+                _BottomSlideRoute(page: const BuyPage()),
               ),
             ),
           ),
@@ -351,122 +350,37 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
     );
   }
 
-  // フローティングナビゲーションバー（Figma準拠）
   Widget _buildBottomNav(double bottomPadding) {
     const items = [
-      _NavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
-      _NavItem(asset: 'assets/icons/listsearch.svg', label: '銘柄一覧'),
-      _NavItem(asset: 'assets/icons/order.svg', label: '注文'),
-      _NavItem(asset: 'assets/icons/assets.svg', label: '資産'),
-      _NavItem(asset: 'assets/icons/Othermenu.svg', label: 'メニュー'),
+      GlassNavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
+      GlassNavItem(asset: 'assets/icons/listsearch.svg', label: '銘柄一覧'),
+      GlassNavItem(asset: 'assets/icons/order.svg', label: '注文'),
+      GlassNavItem(asset: 'assets/icons/assets.svg', label: '資産'),
+      GlassNavItem(asset: 'assets/icons/Othermenu.svg', label: 'メニュー'),
     ];
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      padding: EdgeInsets.only(
-        top: 4,
-        left: 16,
-        right: 16,
-        bottom: bottomPadding, // SafeArea 分のみ（16px gap は Stack が担当）
-      ),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment(0.58, 1.24),
-          end: Alignment(0.58, -0.15),
-          colors: [Color(0xFFEEF1F4), Color(0x0CD3DBE4)],
-        ),
-        borderRadius: BorderRadius.circular(40),
-      ),
-      child: Stack(
-        children: [
-          // グレー丸角ピル背景（ナビアイテム下）
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              height: 58,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.60),
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1E000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 1),
-                  ),
-                  BoxShadow(color: Color(0x19000000), blurRadius: 2),
-                ],
-              ),
-            ),
-          ),
-          // ナビアイテム
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SizedBox(
-              height: 58,
-              child: Row(
-                children: List.generate(items.length, (i) {
-                  final isActive = i == _navIndex;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _navIndex = i),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: isActive
-                            ? BoxDecoration(
-                                color: const Color(0x21939393),
-                                borderRadius: BorderRadius.circular(40),
-                              )
-                            : null,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          spacing: 2,
-                          children: [
-                            SvgPicture.asset(
-                              items[i].asset,
-                              width: 22,
-                              height: 22,
-                              colorFilter: ColorFilter.mode(
-                                isActive
-                                    ? const Color(0xFFBF0000)
-                                    : const Color(0xFF4D4D4D),
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            Text(
-                              items[i].label,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isActive
-                                    ? const Color(0xFFBF0000)
-                                    : const Color(0xFF4D4D4D),
-                                fontSize: 10,
-                                fontFamily: _fontFamily,
-                                fontWeight: isActive
-                                    ? FontWeight.w600
-                                    : FontWeight.w300,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return LiquidGlassBottomNav(
+      selectedIndex: _navIndex,
+      onTap: _onNavTap,
+      items: items,
+      bottomPadding: bottomPadding,
     );
+  }
+
+  void _onNavTap(int i) {
+    if (i == 1) {
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, _, _) => const CoinListPage(),
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          transitionsBuilder: (_, anim, _, child) =>
+              FadeTransition(opacity: anim, child: child),
+        ),
+      );
+    } else {
+      setState(() => _navIndex = i);
+    }
   }
 
   String _formatPrice(double price) {
@@ -480,8 +394,20 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
   }
 }
 
-class _NavItem {
-  final String asset;
-  final String label;
-  const _NavItem({required this.asset, required this.label});
+
+// ── ボトムシート風スライドアップ遷移 ──────────────────────
+class _BottomSlideRoute extends PageRouteBuilder {
+  final Widget page;
+
+  _BottomSlideRoute({required this.page})
+      : super(
+          opaque: false,
+          pageBuilder: (_, _, _) => page,
+          transitionDuration: const Duration(milliseconds: 420),
+          reverseTransitionDuration: const Duration(milliseconds: 320),
+          // アニメーションは buy.dart 側で ModalRoute.animation を使い
+          // オーバーレイ(フェード)とシート(スライド)を個別に制御するため
+          // ここでは child をそのまま返す
+          transitionsBuilder: (_, _, _, child) => child,
+        );
 }

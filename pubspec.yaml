@@ -2,24 +2,26 @@ name: flutter_application_1
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
-
+ 
 environment:
   sdk: ^3.10.7
-
+ 
 dependencies:
   flutter:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
   google_fonts: ^8.0.2
-  # ここを1つだけにします（バージョンを最新の 1.0.5 に上げるのがおすすめです）
+  # ここを1つだけにします(バージョンを最新の 1.0.5 に上げるのがおすすめです)
   mesh: ^0.5.0
   flutter_svg: ^2.0.10
-
+  liquid_glass_renderer: ^0.2.0-dev.4
+  video_player: ^2.11.1
+ 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
 
 flutter:
   uses-material-design: true
@@ -29,9 +31,19 @@ flutter:
     - assets/icons/bch.png
     - assets/icons/btc.png
     - assets/icons/xrp.png
+    - assets/icons/eth.png
+    - assets/icons/doge.png
+    - assets/icons/ltc.png
+    - assets/icons/dot.png
+    - assets/icons/link.png
+    - assets/icons/shib.svg
+    - assets/icons/trx.svg
     - assets/icons/header.png
+    - assets/icons/Actual-1.png
+    - assets/icons/Actual-2.png
     - assets/icons/Home.svg
     - assets/icons/listsearch.svg
     - assets/icons/order.svg
     - assets/icons/assets.svg
     - assets/icons/Othermenu.svg
+    - assets/mp4/
