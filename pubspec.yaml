@@ -16,6 +16,7 @@ dependencies:
   flutter_svg: ^2.0.10
   liquid_glass_renderer: ^0.2.0-dev.4
   video_player: ^2.11.1
+  lottie: ^3.3.3
  
 dev_dependencies:
   flutter_test:
@@ -47,3 +48,4 @@ flutter:
     - assets/icons/assets.svg
     - assets/icons/Othermenu.svg
     - assets/mp4/
+    - assets/lottie/

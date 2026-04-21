@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:lottie/lottie.dart';
 
 void showOrderCompleteDialog(
   BuildContext context, {
@@ -36,27 +36,6 @@ class _OrderCompleteDialog extends StatefulWidget {
 }
 
 class _OrderCompleteDialogState extends State<_OrderCompleteDialog> {
-  late VideoPlayerController _video;
-  bool _ready = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _video = VideoPlayerController.asset('assets/mp4/success.mp4')
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() => _ready = true);
-          _video.play();
-        }
-      });
-  }
-
-  @override
-  void dispose() {
-    _video.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -74,18 +53,19 @@ class _OrderCompleteDialogState extends State<_OrderCompleteDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Video + title ─────────────────────────────────────
+            // ── Lottie + title ────────────────────────────────────
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
+                Lottie.asset(
+                  'assets/lottie/success.json',
                   width: 120,
                   height: 120,
-                  child: _ready ? VideoPlayer(_video) : const SizedBox.shrink(),
+                  repeat: false,
                 ),
                 Transform.translate(
-                  offset: const Offset(0, -24), // 上に24px移動
+                  offset: const Offset(0, -24),
                   child: const Text(
                     '注文完了',
                     textAlign: TextAlign.center,
