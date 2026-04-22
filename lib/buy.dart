@@ -446,11 +446,13 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     final shouldPinRight = centeredRightEdge > maxAmountWidth;
 
     // 中央配置モードの Alignment.x 計算
-    // 余白 slack の右側に (btcIconWidth + gap) / 2 だけシフトすれば画面中央に見える
+    // 入力が空の場合はモードに関わらず固定センター(ズレ防止)
     final slack = maxAmountWidth - actualWidth;
-    final centerAlignX = slack > 1.0
-        ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
-        : 0.0;
+    final centerAlignX = _rawDigits.isEmpty
+        ? (btcIconWidth + gap) / (maxAmountWidth - 1)
+        : slack > 1.0
+            ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
+            : 0.0;
 
     // 金額エリアの高さ = 最大フォントサイズの行高(height: 1 で描画)
     // これにより、どの fs でも同じベースラインで描画される
@@ -568,13 +570,13 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (child, anim) {
         final isIncoming = child.key == ValueKey(_isBtcMode);
-        final slideIn = Tween<Offset>(
-          begin: Offset(0, isIncoming ? 0.5 : -0.5),
+        final slide = Tween<Offset>(
+          begin: Offset(0, isIncoming ? 0.4 : -0.4),
           end: Offset.zero,
-        ).animate(anim);
+        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
         return FadeTransition(
           opacity: anim,
-          child: SlideTransition(position: slideIn, child: child),
+          child: SlideTransition(position: slide, child: child),
         );
       },
       child: TweenAnimationBuilder<double>(
@@ -601,10 +603,10 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
               child: Text(
                 _isBtcMode ? 'BTC' : '円',
                 style: _hiraFont.copyWith(
-                  fontSize: fs * 0.36,
+                  fontSize: fs * 0.28,
                   fontWeight: FontWeight.w300,
                   color: amountColor,
-                  height: 1,
+                  height: 1.5,
                 ),
               ),
             ),

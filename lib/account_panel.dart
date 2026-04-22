@@ -1,18 +1,7 @@
 import 'dart:ui';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
-
-// ══════════════════════════════════════════════════════════════
-//  AccountPanel
-//
-//  ・ShaderMask + RadialGradient でソフトエッジの円形展開
-//  ・BackdropFilter 二重でリキッドグラス（ホーム画面が透ける）
-//  ・閉じるとき origin に吸い込まれ、呼び出し元でバウンス
-//  ・全 Text に decoration: TextDecoration.none を明示
-// ══════════════════════════════════════════════════════════════
 
 class AccountPanel {
   static Future<void> show(BuildContext context, GlobalKey avatarKey) {
@@ -28,14 +17,13 @@ class AccountPanel {
         barrierDismissible: false,
         transitionDuration: const Duration(milliseconds: 600),
         reverseTransitionDuration: const Duration(milliseconds: 500),
-        pageBuilder: (_, __, ___) => _PanelOverlay(origin: center),
-        transitionsBuilder: (_, a, __, child) => child,
+        pageBuilder: (ctx, a1, a2) => _PanelOverlay(origin: center),
+        transitionsBuilder: (ctx, a, a2, child) => child,
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
 class _PanelOverlay extends StatefulWidget {
   final Offset origin;
   const _PanelOverlay({required this.origin});
@@ -48,11 +36,11 @@ class _PanelOverlayState extends State<_PanelOverlay>
   late final AnimationController _masterCtrl;
   late final AnimationController _contentCtrl;
 
-  late final Animation<double> _reveal; // 0→1 ソフト円展開
-  late final Animation<double> _bgBlur; // 全画面背景ブラー
-  late final Animation<double> _bgDim; // 全画面暗幕
-  late final Animation<double> _cFade; // コンテンツ不透明度
-  late final Animation<double> _cSlide; // コンテンツ Yオフセット
+  late final Animation<double> _reveal;
+  late final Animation<double> _bgBlur;
+  late final Animation<double> _bgDim;
+  late final Animation<double> _cFade;
+  late final Animation<double> _cSlide;
 
   bool _closing = false;
 
@@ -65,13 +53,11 @@ class _PanelOverlayState extends State<_PanelOverlay>
       duration: const Duration(milliseconds: 580),
     );
 
-    // 円形展開 — easeOutQuart でスプリング的な減速
     _reveal = CurvedAnimation(
       parent: _masterCtrl,
       curve: const Interval(0.0, 0.88, curve: Curves.easeOutQuart),
     );
 
-    // 背景ブラー（展開に伴う全体ブラー）
     _bgBlur = Tween<double>(begin: 0, end: 16).animate(
       CurvedAnimation(
         parent: _masterCtrl,
@@ -79,7 +65,6 @@ class _PanelOverlayState extends State<_PanelOverlay>
       ),
     );
 
-    // 背景暗幕
     _bgDim = Tween<double>(begin: 0, end: 0.12).animate(
       CurvedAnimation(
         parent: _masterCtrl,
@@ -87,7 +72,6 @@ class _PanelOverlayState extends State<_PanelOverlay>
       ),
     );
 
-    // コンテンツ
     _contentCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -110,7 +94,7 @@ class _PanelOverlayState extends State<_PanelOverlay>
     if (_closing) return;
     _closing = true;
     _contentCtrl.reverse();
-    await Future.delayed(const Duration(milliseconds: 120));
+    await Future.delayed(const Duration(milliseconds: 80));
     await _masterCtrl.reverse();
     if (mounted) Navigator.of(context).pop();
   }
@@ -122,6 +106,20 @@ class _PanelOverlayState extends State<_PanelOverlay>
     super.dispose();
   }
 
+  double _maxRadius(Size s, Offset o) {
+    double m = 0;
+    for (final c in [
+      Offset.zero,
+      Offset(s.width, 0),
+      Offset(0, s.height),
+      Offset(s.width, s.height),
+    ]) {
+      final d = (c - o).distance;
+      if (d > m) m = d;
+    }
+    return m;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screen = MediaQuery.of(context).size;
@@ -131,14 +129,13 @@ class _PanelOverlayState extends State<_PanelOverlay>
       animation: Listenable.merge([_masterCtrl, _contentCtrl]),
       builder: (context, _) {
         final revealVal = _reveal.value;
-        // 現在の展開半径（フェザー領域を含む）
         final currentR = maxR * revealVal;
-        // フェザー幅（展開中はリッチに、完了近くで縮小）
-        final feather = 80.0 * (1.0 - revealVal).clamp(0.0, 1.0) + 20.0;
+        // フェザーを maxR の 18% に固定。開閉どちらでも境界が見えない
+        final feather = (maxR * 0.18).clamp(80.0, 200.0);
 
         return Stack(
           children: [
-            // ── ① 全画面背景ブラー＋暗幕 ──────────────────────
+            // ── ① 背景ブラー＋暗幕 ──────────────────────────────
             if (_bgBlur.value > 0.3)
               Positioned.fill(
                 child: BackdropFilter(
@@ -152,7 +149,7 @@ class _PanelOverlayState extends State<_PanelOverlay>
                 ),
               ),
 
-            // ── ② リキッドグラスパネル（ソフトエッジ展開）──────
+            // ── ② ソフトエッジ円形展開パネル ────────────────────
             Positioned.fill(
               child: _SoftCircleReveal(
                 center: widget.origin,
@@ -160,7 +157,6 @@ class _PanelOverlayState extends State<_PanelOverlay>
                 feather: feather,
                 child: Stack(
                   children: [
-                    // 強ブラー + 半透明グラデ → ホーム画面が透ける
                     BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
                       child: Container(
@@ -177,8 +173,6 @@ class _PanelOverlayState extends State<_PanelOverlay>
                         ),
                       ),
                     ),
-
-                    // コンテンツ
                     SafeArea(child: _buildContent()),
                   ],
                 ),
@@ -190,7 +184,6 @@ class _PanelOverlayState extends State<_PanelOverlay>
     );
   }
 
-  // ── コンテンツ ─────────────────────────────────────────────
   Widget _buildContent() {
     return FadeTransition(
       opacity: _cFade,
@@ -204,8 +197,6 @@ class _PanelOverlayState extends State<_PanelOverlay>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 2),
-
-              // ✕ ボタン
               GestureDetector(
                 onTap: _close,
                 child: Container(
@@ -216,17 +207,10 @@ class _PanelOverlayState extends State<_PanelOverlay>
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.close,
-                    size: 20,
-                    color: Color(0xFF444444),
-                  ),
+                  child: const Icon(Icons.close, size: 20, color: Color(0xFF444444)),
                 ),
               ),
-
               const SizedBox(height: 12),
-
-              // アカウント
               const Text(
                 'アカウント',
                 style: TextStyle(
@@ -238,13 +222,9 @@ class _PanelOverlayState extends State<_PanelOverlay>
                   decoration: TextDecoration.none,
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // ユーザー行
               Row(
                 children: [
-                  // TR アバター — ホーム画面と同じピンクグラデーション
                   Container(
                     width: 48,
                     height: 48,
@@ -285,16 +265,10 @@ class _PanelOverlayState extends State<_PanelOverlay>
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-
-              // クイック設定カード
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.60),
                   borderRadius: BorderRadius.circular(16),
@@ -308,10 +282,7 @@ class _PanelOverlayState extends State<_PanelOverlay>
                   ],
                 ),
               ),
-
               const SizedBox(height: 12),
-
-              // メニューカード
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -392,32 +363,12 @@ class _PanelOverlayState extends State<_PanelOverlay>
       ),
     );
   }
-
-  double _maxRadius(Size s, Offset o) {
-    double m = 0;
-    for (final c in [
-      Offset.zero,
-      Offset(s.width, 0),
-      Offset(0, s.height),
-      Offset(s.width, s.height),
-    ]) {
-      final d = (c - o).distance;
-      if (d > m) m = d;
-    }
-    return m;
-  }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  _SoftCircleReveal — ShaderMask でフェザードエッジの円形表示
-//
-//  RadialGradient を使い、半径内は不透明、エッジでフェードアウト。
-//  ClipPath と違い境界がぼやけて「ほわっ」と広がる。
-// ══════════════════════════════════════════════════════════════
 class _SoftCircleReveal extends StatelessWidget {
   final Offset center;
   final double radius;
-  final double feather; // フェザー幅（px）
+  final double feather;
   final Widget child;
 
   const _SoftCircleReveal({
@@ -434,21 +385,19 @@ class _SoftCircleReveal extends StatelessWidget {
     return ShaderMask(
       blendMode: BlendMode.dstIn,
       shaderCallback: (Rect bounds) {
-        // フェザー内のストップ比率
         final innerR = (radius - feather).clamp(0.0, radius);
         final innerStop = innerR / radius;
 
         return RadialGradient(
           center: Alignment(
-            // Alignment: -1..1 の座標系に変換
             (center.dx / bounds.width) * 2 - 1,
             (center.dy / bounds.height) * 2 - 1,
           ),
           radius: radius / bounds.shortestSide,
           colors: const [
-            Colors.white, // 中心：完全不透明
-            Colors.white, // innerStop まで不透明を維持
-            Colors.transparent, // エッジ：完全透明
+            Colors.white,
+            Colors.white,
+            Colors.transparent,
           ],
           stops: [0.0, innerStop.clamp(0.0, 0.99), 1.0],
         ).createShader(bounds);
