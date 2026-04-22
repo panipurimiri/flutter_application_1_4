@@ -392,11 +392,7 @@ class _CoinPriceCardState extends State<CoinPriceCard>
             spacing: 6,
             children: [
               // コインアイコン
-              Image.asset(
-                coin.iconAsset,
-                width: 28,
-                height: 28,
-              ),
+              Image.asset(coin.iconAsset, width: 28, height: 28),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,8 +608,7 @@ class _CoinPriceCardState extends State<CoinPriceCard>
   }
 }
 
-// ── ラインチャート描画 ────────────────────────────────────
-// 上昇: ピンク (#FFA0B9 → #ED1B8B)、下降: グリーン (#B3D3A7 → #268703)
+// ── ラインチャート描画（グラデーションラインのみ） ──────────────────
 class _LineChartPainter extends CustomPainter {
   final List<double> data;
   final double progress; // 0.0 - 1.0
@@ -626,11 +621,6 @@ class _LineChartPainter extends CustomPainter {
     required this.isRising,
     required this.xLabels,
   });
-
-  static const _risingStart = Color(0xFFFFA0B9);
-  static const _risingEnd = Color(0xFFED1B8B);
-  static const _fallingStart = Color(0xFFB3D3A7);
-  static const _fallingEnd = Color(0xFF268703);
 
   static const double _leftMargin = 8;
   static const double _rightMargin = 52;
@@ -658,33 +648,9 @@ class _LineChartPainter extends CustomPainter {
     canvas.save();
     canvas.clipRect(Rect.fromLTRB(0, 0, clipRight, size.height));
 
-    // グラデーション塗りつぶし
-    final fillPath = Path()..moveTo(allPoints.first.dx, allPoints.first.dy);
-    for (final p in allPoints.skip(1)) {
-      fillPath.lineTo(p.dx, p.dy);
-    }
-    fillPath.lineTo(allPoints.last.dx, _topMargin + chartHeight);
-    fillPath.lineTo(allPoints.first.dx, _topMargin + chartHeight);
-    fillPath.close();
+    // ▼▼▼ 修正: 塗りつぶし用(fillPath)と描画(canvas.drawPath)を削除 ▼▼▼
 
-    // トレンドに応じたライン色を決定
-    final lineStart = isRising ? _risingStart : _fallingStart;
-    final lineEnd = isRising ? _risingEnd : _fallingEnd;
-
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            lineEnd.withValues(alpha: 0.18),
-            lineEnd.withValues(alpha: 0.0),
-          ],
-        ).createShader(Rect.fromLTWH(0, _topMargin, size.width, chartHeight)),
-    );
-
-    // チャートライン（左から右へのグラデーション）
+    // チャートライン（左から右への指定グラデーション）
     final linePath = Path()..moveTo(allPoints.first.dx, allPoints.first.dy);
     for (final p in allPoints.skip(1)) {
       linePath.lineTo(p.dx, p.dy);
@@ -695,11 +661,13 @@ class _LineChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [lineStart, lineEnd],
-        ).createShader(
-          Rect.fromLTWH(_leftMargin, 0, chartWidth, size.height),
-        )
-        ..strokeWidth = 2.2
+          colors: const [
+            Color(0xFFFFA0B9), // 指定色1：薄いピンク
+            Color(0xFFED1B8B), // 指定色2：濃いピンク
+          ],
+        ).createShader(Rect.fromLTWH(_leftMargin, 0, chartWidth, size.height))
+        ..strokeWidth =
+            3.0 // 若干太くしました
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
@@ -1043,18 +1011,17 @@ class _LikeButtonState extends State<LikeButton>
                 Transform.scale(
                   scale: (1.0 - t).clamp(0.0, 1.0),
                   child: const Icon(
-                    Icons.favorite, // ← 変更
+                    Icons.favorite,
                     size: 20,
-                    color: Color.fromARGB(255, 255, 255, 255), // 枠ハート（赤）
+                    color: Color.fromARGB(255, 255, 255, 255),
                   ),
                 ),
-
                 Transform.scale(
                   scale: t.clamp(0.0, 2.4),
                   child: const Icon(
-                    Icons.favorite, // ← 変更
+                    Icons.favorite,
                     size: 20,
-                    color: Color.fromARGB(255, 255, 208, 0), // 塗りハート（ちょいピンク）
+                    color: Color.fromARGB(255, 255, 208, 0),
                   ),
                 ),
               ],
