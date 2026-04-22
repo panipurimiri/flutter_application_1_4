@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'glass_bottom_nav.dart';
 import 'coin_list.dart';
 import 'main.dart' show BtcDetailPage;
+import 'account_panel.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
 
@@ -38,8 +39,22 @@ const _kCoins = [
     price: '15,230,036円',
     change: '+0.45%',
     isRising: true,
-    spark: [0.35, 0.42, 0.40, 0.48, 0.44, 0.53, 0.56, 0.60,
-            0.63, 0.67, 0.70, 0.73, 0.75, 0.80],
+    spark: [
+      0.35,
+      0.42,
+      0.40,
+      0.48,
+      0.44,
+      0.53,
+      0.56,
+      0.60,
+      0.63,
+      0.67,
+      0.70,
+      0.73,
+      0.75,
+      0.80,
+    ],
   ),
   _CoinRow(
     iconAsset: 'assets/icons/eth.png',
@@ -49,8 +64,22 @@ const _kCoins = [
     price: '366,000円',
     change: '+0.45%',
     isRising: true,
-    spark: [0.50, 0.55, 0.60, 0.62, 0.63, 0.65, 0.67, 0.68,
-            0.70, 0.69, 0.71, 0.74, 0.76, 0.80],
+    spark: [
+      0.50,
+      0.55,
+      0.60,
+      0.62,
+      0.63,
+      0.65,
+      0.67,
+      0.68,
+      0.70,
+      0.69,
+      0.71,
+      0.74,
+      0.76,
+      0.80,
+    ],
   ),
   _CoinRow(
     iconAsset: 'assets/icons/doge.png',
@@ -59,8 +88,22 @@ const _kCoins = [
     price: '24.65円',
     change: '0.00%',
     isRising: false,
-    spark: [0.50, 0.51, 0.49, 0.50, 0.52, 0.50, 0.49, 0.51,
-            0.50, 0.52, 0.51, 0.50, 0.49, 0.50],
+    spark: [
+      0.50,
+      0.51,
+      0.49,
+      0.50,
+      0.52,
+      0.50,
+      0.49,
+      0.51,
+      0.50,
+      0.52,
+      0.51,
+      0.50,
+      0.49,
+      0.50,
+    ],
   ),
   _CoinRow(
     iconAsset: 'assets/icons/xrp.png',
@@ -69,8 +112,22 @@ const _kCoins = [
     price: '429.11円',
     change: '+0.45%',
     isRising: true,
-    spark: [0.40, 0.42, 0.45, 0.44, 0.46, 0.50, 0.52, 0.55,
-            0.58, 0.60, 0.63, 0.65, 0.68, 0.70],
+    spark: [
+      0.40,
+      0.42,
+      0.45,
+      0.44,
+      0.46,
+      0.50,
+      0.52,
+      0.55,
+      0.58,
+      0.60,
+      0.63,
+      0.65,
+      0.68,
+      0.70,
+    ],
   ),
   _CoinRow(
     iconAsset: 'assets/icons/shib.svg',
@@ -80,8 +137,22 @@ const _kCoins = [
     price: '0.001507円',
     change: '+0.45%',
     isRising: true,
-    spark: [0.30, 0.35, 0.32, 0.38, 0.40, 0.44, 0.42, 0.48,
-            0.50, 0.54, 0.52, 0.58, 0.60, 0.65],
+    spark: [
+      0.30,
+      0.35,
+      0.32,
+      0.38,
+      0.40,
+      0.44,
+      0.42,
+      0.48,
+      0.50,
+      0.54,
+      0.52,
+      0.58,
+      0.60,
+      0.65,
+    ],
   ),
 ];
 
@@ -134,25 +205,45 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fade;
+
+  // ── アカウントパネル用 ──────────────────────────────────
+  final _avatarKey = GlobalKey();
+  late final AnimationController _avatarBounceCtrl;
+  late final Animation<double> _avatarBounce;
 
   @override
   void initState() {
     super.initState();
+
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     WidgetsBinding.instance.addPostFrameCallback((_) => _fadeCtrl.forward());
+
+    _avatarBounceCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _avatarBounce =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.72), weight: 14),
+          TweenSequenceItem(tween: Tween(begin: 0.72, end: 1.18), weight: 28),
+          TweenSequenceItem(tween: Tween(begin: 1.18, end: 0.94), weight: 26),
+          TweenSequenceItem(tween: Tween(begin: 0.94, end: 1.0), weight: 32),
+        ]).animate(
+          CurvedAnimation(parent: _avatarBounceCtrl, curve: Curves.easeInOut),
+        );
   }
 
   @override
   void dispose() {
     _fadeCtrl.dispose();
+    _avatarBounceCtrl.dispose();
     super.dispose();
   }
 
@@ -164,7 +255,6 @@ class _HomePageState extends State<HomePage>
     return Scaffold(
       body: Stack(
         children: [
-          // ── グラデーション背景 ──────────────────────────────
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -178,8 +268,6 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-
-          // ── メインコンテンツ ────────────────────────────────
           FadeTransition(
             opacity: _fade,
             child: SingleChildScrollView(
@@ -187,49 +275,28 @@ class _HomePageState extends State<HomePage>
               child: Column(
                 children: [
                   SizedBox(height: safeTop),
-
-                  // ── ヘッダー ─────────────────────────────────
                   _buildHeader(),
-
-                  // ── 現物/証拠金 トグル ────────────────────────
                   const SizedBox(height: 16),
                   _buildToggle(),
-
-                  // ── 預かり残高 ───────────────────────────────
                   const SizedBox(height: 24),
                   _buildBalance(),
-
-                  // ── 資産を見る ───────────────────────────────
                   const SizedBox(height: 24),
                   _buildAssetButton(),
-
-                  // ── クイックアクション ─────────────────────────
                   const SizedBox(height: 24),
                   _buildQuickActions(),
-
-                  // ── 残高カード 2枚 ────────────────────────────
                   const SizedBox(height: 24),
                   _buildBalanceCards(),
-
-                  // ── お気に入り ───────────────────────────────
                   const SizedBox(height: 24),
                   _buildFavorites(),
-
-                  // ── 銘柄一覧 ─────────────────────────────────
                   const SizedBox(height: 24),
                   _buildCoinList(),
-
-                  // ── ニュース ─────────────────────────────────
                   const SizedBox(height: 24),
                   _buildNews(),
-
                   SizedBox(height: 120 + safeBottom),
                 ],
               ),
             ),
           ),
-
-          // ── ナビゲーションバー ──────────────────────────────
           Positioned(
             left: 0,
             right: 0,
@@ -241,37 +308,47 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── ヘッダー ──────────────────────────────────────────────
+  // ── ヘッダー（アバタータップ → AccountPanel）──────────────
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // TRアバター
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFA0B9), Color(0xFFED1B8B)],
-              ),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'TR',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontFamily: _fontFamily,
-                fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: () async {
+              await AccountPanel.show(context, _avatarKey);
+              _avatarBounceCtrl.forward(from: 0);
+            },
+            child: AnimatedBuilder(
+              animation: _avatarBounce,
+              builder: (context, child) =>
+                  Transform.scale(scale: _avatarBounce.value, child: child),
+              child: Container(
+                key: _avatarKey,
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFA0B9), Color(0xFFED1B8B)],
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'TR',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontFamily: _fontFamily,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ),
           const Spacer(),
-          // ベルアイコン
           Container(
             width: 36,
             height: 36,
@@ -291,16 +368,15 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── 現物/証拠金 トグル ──────────────────────────────────
+  // ── 以下すべて元の home_page.dart と同一 ────────────────
+
   Widget _buildToggle() {
     return Container(
       width: 140,
       padding: const EdgeInsets.all(2),
       decoration: ShapeDecoration(
         color: const Color(0x99D2D6DC),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       child: Row(
         children: [
@@ -348,7 +424,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── 預かり残高 ────────────────────────────────────────────
   Widget _buildBalance() {
     return Stack(
       alignment: Alignment.center,
@@ -448,7 +523,6 @@ class _HomePageState extends State<HomePage>
             ),
           ],
         ),
-        // 非表示アイコン（右上）
         Positioned(
           right: 16,
           top: 0,
@@ -471,16 +545,13 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── 資産を見る ───────────────────────────────────────────
   Widget _buildAssetButton() {
     return Container(
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: ShapeDecoration(
         color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(128),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(128)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -502,7 +573,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── クイックアクション ──────────────────────────────────
   Widget _buildQuickActions() {
     final actions = [
       ('assets/icons/in.png', '入金', false),
@@ -552,24 +622,27 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── 残高カード 2枚 ────────────────────────────────────────
   Widget _buildBalanceCards() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Expanded(child: _buildBalanceCard(
-            icon: 'assets/icons/yen.png',
-            label: '日本円残高',
-            value: '¥ 4,310,000',
-          )),
+          Expanded(
+            child: _buildBalanceCard(
+              icon: 'assets/icons/yen.png',
+              label: '日本円残高',
+              value: '¥ 4,310,000',
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _buildBalanceCard(
-            icon: 'assets/icons/point.png',
-            label: '楽天ポイント',
-            value: 'P 2,124,000',
-            valueColor: const Color(0xFFBF0000),
-          )),
+          Expanded(
+            child: _buildBalanceCard(
+              icon: 'assets/icons/point.png',
+              label: '楽天ポイント',
+              value: 'P 2,124,000',
+              valueColor: const Color(0xFFBF0000),
+            ),
+          ),
         ],
       ),
     );
@@ -627,7 +700,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── お気に入り ────────────────────────────────────────────
   Widget _buildFavorites() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +718,11 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.chevron_right, size: 20, color: Color(0xFF888888)),
+              const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: Color(0xFF888888),
+              ),
             ],
           ),
         ),
@@ -664,7 +740,18 @@ class _HomePageState extends State<HomePage>
                 price: '429.11円',
                 change: '+ 1.75%',
                 isRising: true,
-                spark: [0.4, 0.5, 0.45, 0.55, 0.52, 0.6, 0.58, 0.65, 0.63, 0.70],
+                spark: [
+                  0.4,
+                  0.5,
+                  0.45,
+                  0.55,
+                  0.52,
+                  0.6,
+                  0.58,
+                  0.65,
+                  0.63,
+                  0.70,
+                ],
               ),
               const SizedBox(width: 12),
               _buildFavoriteCard(
@@ -674,7 +761,18 @@ class _HomePageState extends State<HomePage>
                 price: '429.11円',
                 change: '- 0.45%',
                 isRising: false,
-                spark: [0.65, 0.60, 0.63, 0.58, 0.55, 0.52, 0.48, 0.45, 0.42, 0.40],
+                spark: [
+                  0.65,
+                  0.60,
+                  0.63,
+                  0.58,
+                  0.55,
+                  0.52,
+                  0.48,
+                  0.45,
+                  0.42,
+                  0.40,
+                ],
               ),
               const SizedBox(width: 12),
               _buildFavoriteCard(
@@ -684,12 +782,22 @@ class _HomePageState extends State<HomePage>
                 price: '429.11円',
                 change: '+ 0.90%',
                 isRising: true,
-                spark: [0.3, 0.35, 0.4, 0.38, 0.45, 0.50, 0.55, 0.60, 0.58, 0.65],
+                spark: [
+                  0.3,
+                  0.35,
+                  0.4,
+                  0.38,
+                  0.45,
+                  0.50,
+                  0.55,
+                  0.60,
+                  0.58,
+                  0.65,
+                ],
               ),
             ],
           ),
         ),
-        // ページドット
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -749,20 +857,24 @@ class _HomePageState extends State<HomePage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(symbol,
+                  Text(
+                    symbol,
                     style: const TextStyle(
                       color: Color(0xFF777777),
                       fontSize: 10,
                       fontFamily: _fontFamily,
                       fontWeight: FontWeight.w300,
-                    )),
-                  Text(name,
+                    ),
+                  ),
+                  Text(
+                    name,
                     style: const TextStyle(
                       color: Color(0xFF222222),
                       fontSize: 12,
                       fontFamily: _fontFamily,
                       fontWeight: FontWeight.w600,
-                    )),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -776,26 +888,29 @@ class _HomePageState extends State<HomePage>
             ),
           ),
           const SizedBox(height: 4),
-          Text(price,
+          Text(
+            price,
             style: const TextStyle(
               color: Color(0xFF222222),
               fontSize: 12,
               fontFamily: _fontFamily,
               fontWeight: FontWeight.w600,
-            )),
-          Text(change,
+            ),
+          ),
+          Text(
+            change,
             style: TextStyle(
               color: color,
               fontSize: 11,
               fontFamily: _fontFamily,
               fontWeight: FontWeight.w300,
-            )),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ── 銘柄一覧 ──────────────────────────────────────────────
   Widget _buildCoinList() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -827,7 +942,11 @@ class _HomePageState extends State<HomePage>
                     ),
                   ),
                   const Spacer(),
-                  const Icon(Icons.chevron_right, size: 20, color: Color(0xFF888888)),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Color(0xFF888888),
+                  ),
                 ],
               ),
             ),
@@ -837,7 +956,12 @@ class _HomePageState extends State<HomePage>
               return Column(
                 children: [
                   if (i > 0)
-                    const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFEEEEEE)),
+                    const Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Color(0xFFEEEEEE),
+                    ),
                   _buildCoinRow(coin),
                 ],
               );
@@ -853,14 +977,13 @@ class _HomePageState extends State<HomePage>
     final color = coin.isRising
         ? const Color(0xFFEA0541)
         : coin.change == '0.00%'
-            ? const Color(0xFF888888)
-            : const Color(0xFF00A896);
+        ? const Color(0xFF888888)
+        : const Color(0xFF00A896);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // アイコン
           SizedBox(
             width: 32,
             height: 32,
@@ -869,7 +992,6 @@ class _HomePageState extends State<HomePage>
                 : Image.asset(coin.iconAsset, width: 32, height: 32),
           ),
           const SizedBox(width: 10),
-          // 銘柄名
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -888,7 +1010,10 @@ class _HomePageState extends State<HomePage>
                     if (coin.badge != null) ...[
                       const SizedBox(width: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEF4FF),
                           borderRadius: BorderRadius.circular(4),
@@ -918,7 +1043,6 @@ class _HomePageState extends State<HomePage>
               ],
             ),
           ),
-          // スパークライン
           SizedBox(
             width: 60,
             height: 28,
@@ -929,12 +1053,9 @@ class _HomePageState extends State<HomePage>
                       color: const Color(0xFFBBBBBB),
                     ),
                   )
-                : CustomPaint(
-                    painter: _SparkPainter(coin.spark, color),
-                  ),
+                : CustomPaint(painter: _SparkPainter(coin.spark, color)),
           ),
           const SizedBox(width: 12),
-          // 価格・変動率
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -963,7 +1084,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ── ニュース ──────────────────────────────────────────────
   Widget _buildNews() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -981,7 +1101,6 @@ class _HomePageState extends State<HomePage>
         ),
         child: Column(
           children: [
-            // ヘッダー
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
@@ -996,7 +1115,11 @@ class _HomePageState extends State<HomePage>
                     ),
                   ),
                   const Spacer(),
-                  const Icon(Icons.chevron_right, size: 20, color: Color(0xFF888888)),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Color(0xFF888888),
+                  ),
                 ],
               ),
             ),
@@ -1027,7 +1150,6 @@ class _HomePageState extends State<HomePage>
                 ],
               ),
             ),
-            // 日付
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Align(
@@ -1043,7 +1165,6 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
             ),
-            // Daily Report バナー
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -1052,9 +1173,15 @@ class _HomePageState extends State<HomePage>
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF8F0),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFFDDAA), width: 0.5),
+                  border: Border.all(
+                    color: const Color(0xFFFFDDAA),
+                    width: 0.5,
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Column(
@@ -1098,14 +1225,18 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             const SizedBox(height: 8),
-            // ニュース記事一覧
             ..._kNews.asMap().entries.map((e) {
               final i = e.key;
               final news = e.value;
               return Column(
                 children: [
                   if (i > 0)
-                    const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFEEEEEE)),
+                    const Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Color(0xFFEEEEEE),
+                    ),
                   _buildNewsItem(news),
                 ],
               );
@@ -1161,14 +1292,17 @@ class _HomePageState extends State<HomePage>
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.image_outlined, color: Color(0xFFBBBBBB), size: 28),
+            child: const Icon(
+              Icons.image_outlined,
+              color: Color(0xFFBBBBBB),
+              size: 28,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ── ナビゲーション ────────────────────────────────────────
   Widget _buildBottomNav(double bottomPadding, BuildContext context) {
     const items = [
       GlassNavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
@@ -1181,21 +1315,27 @@ class _HomePageState extends State<HomePage>
       selectedIndex: 0,
       onTap: (i) {
         if (i == 1) {
-          Navigator.push(context, PageRouteBuilder(
-            pageBuilder: (ctx, a1, a2) => const CoinListPage(),
-            transitionDuration: const Duration(milliseconds: 250),
-            reverseTransitionDuration: const Duration(milliseconds: 200),
-            transitionsBuilder: (ctx, anim, a2, child) =>
-                FadeTransition(opacity: anim, child: child),
-          ));
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (ctx, a1, a2) => const CoinListPage(),
+              transitionDuration: const Duration(milliseconds: 250),
+              reverseTransitionDuration: const Duration(milliseconds: 200),
+              transitionsBuilder: (ctx, anim, a2, child) =>
+                  FadeTransition(opacity: anim, child: child),
+            ),
+          );
         } else if (i == 2) {
-          Navigator.push(context, PageRouteBuilder(
-            pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
-            transitionDuration: const Duration(milliseconds: 250),
-            reverseTransitionDuration: const Duration(milliseconds: 200),
-            transitionsBuilder: (ctx, anim, a2, child) =>
-                FadeTransition(opacity: anim, child: child),
-          ));
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
+              transitionDuration: const Duration(milliseconds: 250),
+              reverseTransitionDuration: const Duration(milliseconds: 200),
+              transitionsBuilder: (ctx, anim, a2, child) =>
+                  FadeTransition(opacity: anim, child: child),
+            ),
+          );
         }
       },
       items: items,
