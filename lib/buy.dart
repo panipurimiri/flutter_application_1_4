@@ -565,18 +565,36 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
 
   Widget _buildAmountContent(double targetFs, Color amountColor) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 420),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.center,
+        children: [...previous, ?current],
+      ),
       transitionBuilder: (child, anim) {
         final isIncoming = child.key == ValueKey(_isBtcMode);
-        final slide = Tween<Offset>(
-          begin: Offset(0, isIncoming ? 0.4 : -0.4),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
-        return FadeTransition(
-          opacity: anim,
-          child: SlideTransition(position: slide, child: child),
+        // 退場: 0→-90度（奥へ倒れる）、登場: 90→0度（奥から起き上がる）
+        final angle = Tween<double>(
+          begin: isIncoming ? 1.5708 : 0.0,   // π/2
+          end:   isIncoming ? 0.0    : -1.5708,
+        ).animate(anim);
+        return AnimatedBuilder(
+          animation: angle,
+          child: child,
+          builder: (_, w) {
+            final v = angle.value;
+            // 前半(退場)は非表示、後半(登場)は表示
+            if (!isIncoming && v < -1.0) return const SizedBox.shrink();
+            if (isIncoming  && v >  1.0) return const SizedBox.shrink();
+            return Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)   // perspective
+                ..rotateX(v),
+              child: w,
+            );
+          },
         );
       },
       child: TweenAnimationBuilder<double>(

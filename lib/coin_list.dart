@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'glass_bottom_nav.dart';
 import 'main.dart' show BtcDetailPage;
+import 'assets_page.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
 const _hiraFont = TextStyle(fontFamily: _fontFamily);
@@ -440,6 +441,14 @@ class _CoinListPageState extends State<CoinListPage>
         } else if (i == 2) {
           Navigator.push(context, PageRouteBuilder(
             pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
+            transitionDuration: const Duration(milliseconds: 250),
+            reverseTransitionDuration: const Duration(milliseconds: 200),
+            transitionsBuilder: (ctx, anim, a2, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ));
+        } else if (i == 3) {
+          Navigator.push(context, PageRouteBuilder(
+            pageBuilder: (ctx, a1, a2) => const AssetsPage(),
             transitionDuration: const Duration(milliseconds: 250),
             reverseTransitionDuration: const Duration(milliseconds: 200),
             transitionsBuilder: (ctx, anim, a2, child) =>

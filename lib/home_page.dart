@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'glass_bottom_nav.dart';
 import 'coin_list.dart';
 import 'main.dart' show BtcDetailPage;
+import 'assets_page.dart';
 import 'account_panel.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
@@ -1330,6 +1331,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             context,
             PageRouteBuilder(
               pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
+              transitionDuration: const Duration(milliseconds: 250),
+              reverseTransitionDuration: const Duration(milliseconds: 200),
+              transitionsBuilder: (ctx, anim, a2, child) =>
+                  FadeTransition(opacity: anim, child: child),
+            ),
+          );
+        } else if (i == 3) {
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (ctx, a1, a2) => const AssetsPage(),
               transitionDuration: const Duration(milliseconds: 250),
               reverseTransitionDuration: const Duration(milliseconds: 200),
               transitionsBuilder: (ctx, anim, a2, child) =>

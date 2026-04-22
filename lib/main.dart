@@ -4,6 +4,7 @@ import 'survey_section.dart';
 import 'buy.dart';
 import 'coin_list.dart';
 import 'home_page.dart';
+import 'assets_page.dart';
 import 'mesh_background.dart';
 import 'glass_bottom_nav.dart';
 
@@ -384,6 +385,17 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
         context,
         PageRouteBuilder(
           pageBuilder: (context, a1, a2) => const CoinListPage(),
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          transitionsBuilder: (context, anim, a2, child) =>
+              FadeTransition(opacity: anim, child: child),
+        ),
+      );
+    } else if (i == 3) {
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, a1, a2) => const AssetsPage(),
           transitionDuration: const Duration(milliseconds: 250),
           reverseTransitionDuration: const Duration(milliseconds: 200),
           transitionsBuilder: (context, anim, a2, child) =>
