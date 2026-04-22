@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:ui'; // ← これを追加
 import 'glass_bottom_nav.dart';
 import 'main.dart' show BtcDetailPage;
 import 'coin_list.dart';
@@ -122,11 +123,46 @@ const _kAssets = [
 
 // ── チャートデータ（資産推移 正規化 0–1） ────────────────────
 const _kChartData = [
-  0.18, 0.16, 0.14, 0.18, 0.20, 0.22, 0.25, 0.30,
-  0.28, 0.32, 0.35, 0.40, 0.38, 0.42, 0.45, 0.50,
-  0.55, 0.52, 0.58, 0.62, 0.60, 0.65, 0.68, 0.72,
-  0.70, 0.74, 0.78, 0.75, 0.80, 0.82, 0.85, 0.88,
-  0.86, 0.90, 0.93, 0.96, 0.92, 0.95, 0.97, 1.00,
+  0.18,
+  0.16,
+  0.14,
+  0.18,
+  0.20,
+  0.22,
+  0.25,
+  0.30,
+  0.28,
+  0.32,
+  0.35,
+  0.40,
+  0.38,
+  0.42,
+  0.45,
+  0.50,
+  0.55,
+  0.52,
+  0.58,
+  0.62,
+  0.60,
+  0.65,
+  0.68,
+  0.72,
+  0.70,
+  0.74,
+  0.78,
+  0.75,
+  0.80,
+  0.82,
+  0.85,
+  0.88,
+  0.86,
+  0.90,
+  0.93,
+  0.96,
+  0.92,
+  0.95,
+  0.97,
+  1.00,
 ];
 
 // ── チャートの X 軸ラベル ──────────────────────────────────
@@ -392,7 +428,6 @@ class _AssetsPageState extends State<AssetsPage> {
     );
   }
 
-
   Widget _buildJpyRow() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -581,17 +616,19 @@ class _ChartSectionState extends State<_ChartSection>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: _kChartLabels
-                .map((l) => Text(
-                      l,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF888888),
-                        fontSize: 10,
-                        fontFamily: _fontFamily,
-                        fontWeight: FontWeight.w300,
-                        height: 1.3,
-                      ),
-                    ))
+                .map(
+                  (l) => Text(
+                    l,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF888888),
+                      fontSize: 10,
+                      fontFamily: _fontFamily,
+                      fontWeight: FontWeight.w300,
+                      height: 1.3,
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 12),
@@ -626,7 +663,7 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
   late AnimationController _ctrl;
 
   // (A)+(B) ストレッチ用エッジ
-  late Animation<double> _leadAnim;  // 進行方向の端：速い
+  late Animation<double> _leadAnim; // 進行方向の端：速い
   late Animation<double> _trailAnim; // 後端：遅れて追従
   // テキスト色フェード
   late Animation<double> _fadeAnim;
@@ -671,34 +708,40 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
     _bounceAnim = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 75),
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.07)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 1.07,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 12,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.07, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(
+          begin: 1.07,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 13,
       ),
     ]).animate(_ctrl);
     // 選択テキスト拡大パルス：到着タイミングに同期
-    _scaleAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.18)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.18, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 60,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: _ctrl,
-        curve: const Interval(0.35, 0.88),
-      ),
-    );
+    _scaleAnim =
+        TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween(
+              begin: 1.0,
+              end: 1.18,
+            ).chain(CurveTween(curve: Curves.easeOut)),
+            weight: 40,
+          ),
+          TweenSequenceItem(
+            tween: Tween(
+              begin: 1.18,
+              end: 1.0,
+            ).chain(CurveTween(curve: Curves.easeInOut)),
+            weight: 60,
+          ),
+        ]).animate(
+          CurvedAnimation(parent: _ctrl, curve: const Interval(0.35, 0.88)),
+        );
 
     _ctrl.forward(from: 0);
   }
@@ -771,14 +814,15 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
               return Stack(
                 children: [
                   // ── ゴムピル ────────────────────────────────
+                  // ── ゴムピル（リキッドグラス表現へ変更） ────────────────────────────────
                   Positioned(
                     left: pillLeft,
                     top: _kInset,
                     bottom: _kInset,
                     width: pillW,
                     child: Container(
+                      // 1. 外側のドロップシャドウ（ガラスを浮き上がらせる）
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.90),
                         borderRadius: BorderRadius.circular(_kRadius),
                         boxShadow: [
                           BoxShadow(
@@ -787,6 +831,37 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
                             offset: const Offset(0, 2),
                           ),
                         ],
+                      ),
+                      // 2. はみ出たぼかしを角丸に切り抜く
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(_kRadius),
+                        // 3. すりガラスのぼかし効果（ここがGlassmorphismのキモ）
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              // 4. 光沢を表現する半透明グラデーション
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(
+                                    alpha: 0.75,
+                                  ), // 左上は明るく（光の反射）
+                                  Colors.white.withValues(
+                                    alpha: 0.25,
+                                  ), // 右下は透過させる
+                                ],
+                              ),
+                              // 5. ガラスのエッジを強調する白いフチ
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                width: 1.0,
+                              ),
+                              borderRadius: BorderRadius.circular(_kRadius),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -800,16 +875,23 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
                       if (_prev == _cur) {
                         labelColor = i == _cur ? active : inactive;
                       } else if (i == _cur) {
-                        labelColor =
-                            Color.lerp(inactive, active, _fadeAnim.value)!;
+                        labelColor = Color.lerp(
+                          inactive,
+                          active,
+                          _fadeAnim.value,
+                        )!;
                       } else if (i == _prev) {
-                        labelColor =
-                            Color.lerp(active, inactive, _fadeAnim.value)!;
+                        labelColor = Color.lerp(
+                          active,
+                          inactive,
+                          _fadeAnim.value,
+                        )!;
                       } else {
                         labelColor = inactive;
                       }
 
-                      final fw = (i == _cur ||
+                      final fw =
+                          (i == _cur ||
                               (_prev != _cur &&
                                   i == _prev &&
                                   _fadeAnim.value < 0.5))
@@ -817,8 +899,9 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
                           : FontWeight.w300;
 
                       // 選択タブのみスケールパルスを適用
-                      final double scale =
-                          (i == _cur && _prev != _cur) ? _scaleAnim.value : 1.0;
+                      final double scale = (i == _cur && _prev != _cur)
+                          ? _scaleAnim.value
+                          : 1.0;
 
                       return Expanded(
                         child: GestureDetector(
@@ -944,10 +1027,8 @@ class _AssetRowWidget extends StatelessWidget {
                   width: 36,
                   height: 36,
                   child: asset.isSvg
-                      ? SvgPicture.asset(asset.iconAsset,
-                          width: 36, height: 36)
-                      : Image.asset(asset.iconAsset,
-                          width: 36, height: 36),
+                      ? SvgPicture.asset(asset.iconAsset, width: 36, height: 36)
+                      : Image.asset(asset.iconAsset, width: 36, height: 36),
                 ),
                 const SizedBox(width: 12),
                 // 銘柄名
