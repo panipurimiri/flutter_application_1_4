@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:ui'; // ← これを追加
+import 'dart:ui'; // BackdropFilterとImageFilterに必要
+
 import 'glass_bottom_nav.dart';
 import 'main.dart' show BtcDetailPage;
 import 'coin_list.dart';
@@ -228,7 +229,7 @@ class _AssetsPageState extends State<AssetsPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // トップタブ（資産状況 / 実現損益 / 取引累計 / 推移）
+                  // トップタブ
                   _buildTopTabs(),
                   const SizedBox(height: 24),
 
@@ -251,8 +252,8 @@ class _AssetsPageState extends State<AssetsPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
-                      children: [
-                        const Expanded(
+                      children: const [
+                        Expanded(
                           child: Text(
                             '評価額',
                             style: TextStyle(
@@ -265,7 +266,7 @@ class _AssetsPageState extends State<AssetsPage> {
                         ),
                         Text(
                           '評価損益',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Color(0xFF888888),
                             fontSize: 12,
                             fontFamily: _fontFamily,
@@ -355,8 +356,8 @@ class _AssetsPageState extends State<AssetsPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const Text(
+          children: const [
+            Text(
               '18,937,150',
               style: TextStyle(
                 color: Color(0xFF222222),
@@ -366,8 +367,8 @@ class _AssetsPageState extends State<AssetsPage> {
                 height: 0.9,
               ),
             ),
-            const SizedBox(width: 4),
-            const Padding(
+            SizedBox(width: 4),
+            Padding(
               padding: EdgeInsets.only(bottom: 2),
               child: Text(
                 '円',
@@ -553,10 +554,6 @@ class _AssetsPageState extends State<AssetsPage> {
   }
 }
 
-// ── ゴムアニメーション付き期間タブ ──────────────────────────
-//
-// リードエッジ（進行方向の端）が先行し、
-// トレイルエッジ（後端）が遅れて追従することで
 // ── チャートセクション（状態保持） ───────────────────────────
 class _ChartSection extends StatefulWidget {
   final int periodTab;
@@ -643,7 +640,7 @@ class _ChartSectionState extends State<_ChartSection>
   }
 }
 
-// 液体が伸び縮みするような弾力表現を実現する。
+// ── ゴムアニメーション付き期間タブ（全体リキッドグラス化） ───────────────
 class _LiquidPeriodTabs extends StatefulWidget {
   final List<String> labels;
   final int selectedIndex;
@@ -662,14 +659,10 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
-  // (A)+(B) ストレッチ用エッジ
-  late Animation<double> _leadAnim; // 進行方向の端：速い
-  late Animation<double> _trailAnim; // 後端：遅れて追従
-  // テキスト色フェード
+  late Animation<double> _leadAnim;
+  late Animation<double> _trailAnim;
   late Animation<double> _fadeAnim;
-  // (C) 到着時ぷるん：ピル全体スケール 1.0 → 1.07 → 1.0
   late Animation<double> _bounceAnim;
-  // 選択テキスト拡大パルス 1.0 → 1.18 → 1.0
   late Animation<double> _scaleAnim;
 
   int _prev = 0;
@@ -685,26 +678,22 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
     final f = from.toDouble();
     final t = to.toDouble();
 
-    // (A) リード：Interval前半で一気に到達 → trail との差がストレッチ幅になる
     _leadAnim = Tween<double>(begin: f, end: t).animate(
       CurvedAnimation(
         parent: _ctrl,
         curve: const Interval(0.0, 0.42, curve: Curves.easeOut),
       ),
     );
-    // (B) トレイル：遅延スタート＋easeOut で追従 → ピルが縮みながら到着
     _trailAnim = Tween<double>(begin: f, end: t).animate(
       CurvedAnimation(
         parent: _ctrl,
         curve: const Interval(0.28, 0.82, curve: Curves.easeOut),
       ),
     );
-    // テキスト色：trail が追いつく頃に切り替え
     _fadeAnim = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.30, 0.65, curve: Curves.easeInOut),
     );
-    // (C) 到着時ぷるん：trail 到着直後にピル全体が膨らんで戻る
     _bounceAnim = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 75),
       TweenSequenceItem(
@@ -722,7 +711,6 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
         weight: 13,
       ),
     ]).animate(_ctrl);
-    // 選択テキスト拡大パルス：到着タイミングに同期
     _scaleAnim =
         TweenSequence<double>([
           TweenSequenceItem(
@@ -787,152 +775,161 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
         final totalW = constraints.maxWidth;
         final tabW = totalW / widget.labels.length;
 
-        return Container(
-          height: _kBarH,
-          decoration: BoxDecoration(
-            color: const Color(0x99D2D6DC),
-            borderRadius: BorderRadius.circular(_kRadius),
-          ),
-          child: AnimatedBuilder(
-            animation: _ctrl,
-            builder: (context, _) {
-              final lead = _leadAnim.value;
-              final trail = _trailAnim.value;
+        // 【背景の全体トラック】リキッドグラス表現
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(_kRadius),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+            child: Container(
+              height: _kBarH,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFFD2D6DC).withValues(alpha: 0.4),
+                    const Color(0xFFD2D6DC).withValues(alpha: 0.1),
+                  ],
+                ),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  width: 1.0,
+                ),
+                borderRadius: BorderRadius.circular(_kRadius),
+              ),
+              child: AnimatedBuilder(
+                animation: _ctrl,
+                builder: (context, _) {
+                  final lead = _leadAnim.value;
+                  final trail = _trailAnim.value;
 
-              // 進行方向に応じてリード／トレイルを左右に割り当てる
-              final double pillLeft;
-              final double pillRight;
-              if (_movingRight) {
-                pillLeft = trail * tabW + _kInset;
-                pillRight = lead * tabW + tabW - _kInset;
-              } else {
-                pillLeft = lead * tabW + _kInset;
-                pillRight = trail * tabW + tabW - _kInset;
-              }
-              final pillW = (pillRight - pillLeft).clamp(0.0, totalW);
+                  final double pillLeft;
+                  final double pillRight;
+                  if (_movingRight) {
+                    pillLeft = trail * tabW + _kInset;
+                    pillRight = lead * tabW + tabW - _kInset;
+                  } else {
+                    pillLeft = lead * tabW + _kInset;
+                    pillRight = trail * tabW + tabW - _kInset;
+                  }
+                  final pillW = (pillRight - pillLeft).clamp(0.0, totalW);
 
-              return Stack(
-                children: [
-                  // ── ゴムピル ────────────────────────────────
-                  // ── ゴムピル（リキッドグラス表現へ変更） ────────────────────────────────
-                  Positioned(
-                    left: pillLeft,
-                    top: _kInset,
-                    bottom: _kInset,
-                    width: pillW,
-                    child: Container(
-                      // 1. 外側のドロップシャドウ（ガラスを浮き上がらせる）
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(_kRadius),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      // 2. はみ出たぼかしを角丸に切り抜く
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(_kRadius),
-                        // 3. すりガラスのぼかし効果（ここがGlassmorphismのキモ）
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              // 4. 光沢を表現する半透明グラデーション
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white.withValues(
-                                    alpha: 0.75,
-                                  ), // 左上は明るく（光の反射）
-                                  Colors.white.withValues(
-                                    alpha: 0.25,
-                                  ), // 右下は透過させる
-                                ],
+                  return Stack(
+                    children: [
+                      // 【選択チップ（動くゴムピル）】リキッドグラス表現
+                      Positioned(
+                        left: pillLeft,
+                        top: _kInset,
+                        bottom: _kInset,
+                        width: pillW,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(_kRadius),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
-                              // 5. ガラスのエッジを強調する白いフチ
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(_kRadius),
-                            ),
+                            ],
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // ── タブラベル ────────────────────────────────
-                  Row(
-                    children: List.generate(widget.labels.length, (i) {
-                      const active = Color(0xFFBF0000);
-                      const inactive = Color(0xFF555555);
-                      final Color labelColor;
-                      if (_prev == _cur) {
-                        labelColor = i == _cur ? active : inactive;
-                      } else if (i == _cur) {
-                        labelColor = Color.lerp(
-                          inactive,
-                          active,
-                          _fadeAnim.value,
-                        )!;
-                      } else if (i == _prev) {
-                        labelColor = Color.lerp(
-                          active,
-                          inactive,
-                          _fadeAnim.value,
-                        )!;
-                      } else {
-                        labelColor = inactive;
-                      }
-
-                      final fw =
-                          (i == _cur ||
-                              (_prev != _cur &&
-                                  i == _prev &&
-                                  _fadeAnim.value < 0.5))
-                          ? FontWeight.w600
-                          : FontWeight.w300;
-
-                      // 選択タブのみスケールパルスを適用
-                      final double scale = (i == _cur && _prev != _cur)
-                          ? _scaleAnim.value
-                          : 1.0;
-
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => widget.onTap(i),
-                          behavior: HitTestBehavior.opaque,
-                          child: SizedBox(
-                            height: _kBarH,
-                            child: Center(
-                              child: Transform.scale(
-                                scale: scale,
-                                child: Text(
-                                  widget.labels[i],
-                                  style: TextStyle(
-                                    color: labelColor,
-                                    fontSize: 14,
-                                    fontFamily: _fontFamily,
-                                    fontWeight: fw,
-                                    height: 1,
-                                    letterSpacing: 0.14,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(_kRadius),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(
+                                sigmaX: 8.0,
+                                sigmaY: 8.0,
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.85),
+                                      Colors.white.withValues(alpha: 0.35),
+                                    ],
                                   ),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    width: 1.0,
+                                  ),
+                                  borderRadius: BorderRadius.circular(_kRadius),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      );
-                    }),
-                  ),
-                ],
-              );
-            },
+                      ),
+
+                      // ── タブラベル ────────────────────────────────
+                      Row(
+                        children: List.generate(widget.labels.length, (i) {
+                          const active = Color(0xFFBF0000);
+                          const inactive = Color(0xFF555555);
+                          final Color labelColor;
+                          if (_prev == _cur) {
+                            labelColor = i == _cur ? active : inactive;
+                          } else if (i == _cur) {
+                            labelColor = Color.lerp(
+                              inactive,
+                              active,
+                              _fadeAnim.value,
+                            )!;
+                          } else if (i == _prev) {
+                            labelColor = Color.lerp(
+                              active,
+                              inactive,
+                              _fadeAnim.value,
+                            )!;
+                          } else {
+                            labelColor = inactive;
+                          }
+
+                          final fw =
+                              (i == _cur ||
+                                  (_prev != _cur &&
+                                      i == _prev &&
+                                      _fadeAnim.value < 0.5))
+                              ? FontWeight.w600
+                              : FontWeight.w300;
+
+                          final double scale = (i == _cur && _prev != _cur)
+                              ? _scaleAnim.value
+                              : 1.0;
+
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () => widget.onTap(i),
+                              behavior: HitTestBehavior.opaque,
+                              child: SizedBox(
+                                height: _kBarH,
+                                child: Center(
+                                  child: Transform.scale(
+                                    scale: scale,
+                                    child: Text(
+                                      widget.labels[i],
+                                      style: TextStyle(
+                                        color: labelColor,
+                                        fontSize: 14,
+                                        fontFamily: _fontFamily,
+                                        fontWeight: fw,
+                                        height: 1,
+                                        letterSpacing: 0.14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         );
       },
@@ -940,7 +937,7 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
   }
 }
 
-// ── チャートペインター（左→右アニメーション付き） ────────────
+// ── チャートペインター（左→右グラデーションラインのみ） ────────────
 class _ChartPainter extends CustomPainter {
   final List<double> data;
   final double progress;
@@ -956,22 +953,26 @@ class _ChartPainter extends CustomPainter {
     final pts = data.sublist(0, visibleCount);
 
     final path = Path();
-    final fillPath = Path();
+    // ▼▼▼ 修正: 背景塗りつぶし用Pathを削除しました ▼▼▼
+    // final fillPath = Path();
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     for (int i = 0; i < pts.length; i++) {
       final x = (i / (totalPoints - 1)) * size.width;
       final y = size.height - pts[i] * size.height;
       if (i == 0) {
         path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
+        // fillPath.moveTo(x, size.height); // 削除
+        // fillPath.lineTo(x, y); // 削除
       } else {
         path.lineTo(x, y);
-        fillPath.lineTo(x, y);
+        // fillPath.lineTo(x, y); // 削除
       }
     }
 
+    // ▼▼▼ 修正: 背景塗りつぶし処理を削除しました ▼▼▼
     // グラデーション塗りつぶし
+    /*
     final lastX = ((pts.length - 1) / (totalPoints - 1)) * size.width;
     fillPath.lineTo(lastX, size.height);
     fillPath.close();
@@ -987,15 +988,32 @@ class _ChartPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
     canvas.drawPath(fillPath, fillPaint);
+    */
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
+    // ▼▼▼ 修正: ラインをグラデーションに変更 ▼▼▼
     // ライン
     final linePaint = Paint()
-      ..color = const Color(0xFFEA0541)
-      ..strokeWidth = 2.0
+      // ..color = const Color(0xFFEA0541) // 単色を削除
+      ..strokeWidth =
+          3.0 // 若干太くしました（グラデーションを見えやすくするため）
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
+
+    // 左から右への線形グラデーションShaderを作成してセット
+    final gradientRect = Rect.fromLTWH(0, 0, size.width, size.height);
+    linePaint.shader = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        const Color(0xFFFFA0B9), // 指定色1：薄いピンク
+        const Color(0xFFED1B8B), // 指定色2：濃いピンク
+      ],
+    ).createShader(gradientRect);
+
     canvas.drawPath(path, linePaint);
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   }
 
   @override
@@ -1022,7 +1040,6 @@ class _AssetRowWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
-                // アイコン
                 SizedBox(
                   width: 36,
                   height: 36,
@@ -1031,7 +1048,6 @@ class _AssetRowWidget extends StatelessWidget {
                       : Image.asset(asset.iconAsset, width: 36, height: 36),
                 ),
                 const SizedBox(width: 12),
-                // 銘柄名
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1059,7 +1075,6 @@ class _AssetRowWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                // 評価額 + 評価損益
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
