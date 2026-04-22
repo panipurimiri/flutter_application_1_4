@@ -539,7 +539,7 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
         context,
 
         PageRouteBuilder(
-          pageBuilder: (context, a1, a2) => const AssetsPage(),
+          pageBuilder: (context, a1, a2) => AssetsPage(),
 
           transitionDuration: const Duration(milliseconds: 250),
 

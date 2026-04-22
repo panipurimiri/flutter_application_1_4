@@ -822,7 +822,9 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
                         top: _kInset,
                         bottom: _kInset,
                         width: pillW,
-                        child: Container(
+                        child: Transform.scale(
+                          scale: _bounceAnim.value,
+                          child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(_kRadius),
                             boxShadow: [
@@ -860,6 +862,7 @@ class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
                             ),
                           ),
                         ),
+                      ),
                       ),
 
                       // ── タブラベル ────────────────────────────────

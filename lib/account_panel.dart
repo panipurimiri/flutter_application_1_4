@@ -130,8 +130,8 @@ class _PanelOverlayState extends State<_PanelOverlay>
       builder: (context, _) {
         final revealVal = _reveal.value;
         final currentR = maxR * revealVal;
-        // フェザーを maxR の 18% に固定。開閉どちらでも境界が見えない
-        final feather = (maxR * 0.18).clamp(80.0, 200.0);
+        // フェザーを maxR の 22% に固定。境界が自然に消える
+        final feather = (maxR * 0.22).clamp(80.0, 240.0);
 
         return Stack(
           children: [
@@ -152,7 +152,7 @@ class _PanelOverlayState extends State<_PanelOverlay>
             // ── ② ソフトエッジ円形展開パネル ────────────────────
             Positioned.fill(
               child: _SoftCircleReveal(
-                center: widget.origin,
+                center: Offset.zero,
                 radius: currentR,
                 feather: feather,
                 child: Stack(

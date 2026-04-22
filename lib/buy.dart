@@ -15,43 +15,103 @@ class BuyPage extends StatefulWidget {
   State<BuyPage> createState() => _BuyPageState();
 }
 
-class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
+class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   String _rawDigits = '';
   bool _showKeyboard = false;
   bool _skipConfirm = false;
   bool _usePoint = true;
   bool _isBtcMode = false;
-  late AnimationController _switchAnim;
+
+  // ── Swap animation controller ──
+  late AnimationController _swapCtrl;
+  // Position of outgoing main text: 0 → -1 (slides up & fades)
+  late Animation<double> _outSlide;
+  // Position of incoming main text: 1 → 0 (slides up into place)
+  late Animation<double> _inSlide;
+  // Fade for outgoing
+  late Animation<double> _outFade;
+  // Fade for incoming
+  late Animation<double> _inFade;
+  // ↑↓ icon rotation
   late Animation<double> _iconSpin;
 
   @override
   void initState() {
     super.initState();
-    _switchAnim = AnimationController(
+    _swapCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 350),
+    );
+
+    _outSlide = Tween<double>(begin: 0.0, end: -1.0).animate(
+      CurvedAnimation(
+        parent: _swapCtrl,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic),
+      ),
+    );
+    _outFade = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _swapCtrl,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+      ),
+    );
+    _inSlide = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _swapCtrl,
+        curve: const Interval(0.15, 0.85, curve: Curves.easeOutCubic),
+      ),
+    );
+    _inFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _swapCtrl,
+        curve: const Interval(0.2, 0.7, curve: Curves.easeOut),
+      ),
     );
     _iconSpin = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _switchAnim, curve: Curves.easeOutBack));
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _swapCtrl, curve: Curves.easeOutBack));
   }
 
   @override
   void dispose() {
-    _switchAnim.dispose();
+    _swapCtrl.dispose();
     super.dispose();
   }
 
+  // ── Stored values for the crossfade ──
+  // We snapshot old/new display strings so the outgoing text stays readable
+  String _prevMainText = '0';
+  String _prevMainSuffix = '円';
+  String _prevSubText = '0 BTC';
+  String _nextMainText = '0';
+  String _nextMainSuffix = '円';
+  String _nextSubText = '0 BTC';
+  bool _isAnimating = false;
+
   void _toggleMode() {
+    // Snapshot current values before switching
+    _prevMainText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
+    _prevMainSuffix = _isBtcMode ? 'BTC' : '円';
+    _prevSubText = _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC';
+
     setState(() {
       _isBtcMode = !_isBtcMode;
-      _rawDigits = '';
+      // Don't clear _rawDigits — preserve the converted value
     });
-    _switchAnim.forward(from: 0);
+
+    // Snapshot new values after switching
+    _nextMainText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
+    _nextMainSuffix = _isBtcMode ? 'BTC' : '円';
+    _nextSubText = _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC';
+
+    _isAnimating = true;
+    _swapCtrl.forward(from: 0).then((_) {
+      if (mounted) setState(() => _isAnimating = false);
+    });
   }
 
-  // ── ゲッター ────────────────────────────────────────────
+  // ── Getters ────────────────────────────────────────────
 
   String get _formattedAmount {
     if (_rawDigits.isEmpty) return '0';
@@ -91,7 +151,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     return buf.toString();
   }
 
-  // ── 操作 ────────────────────────────────────────────────
+  // ── Operations ────────────────────────────────────────
   void _quickAdd(int amount) {
     if (_isBtcMode) return;
     setState(() {
@@ -132,7 +192,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     if (_showKeyboard) setState(() => _showKeyboard = false);
   }
 
-  // ── 金額テキストの実幅を計測 ──────────────────────────────
+  // ── Measure text width ──────────────────────────────
   double _measureAmountWidth(double fs) {
     final displayText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
     final suffixText = _isBtcMode ? 'BTC' : '円';
@@ -166,7 +226,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     return (_kMaxFs * availableWidth / totalAtMax).clamp(_kMinFs, _kMaxFs);
   }
 
-  // ── build ────────────────────────────────────────────────
+  // ── build ────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
@@ -295,7 +355,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     );
   }
 
-  // ── ヘッダー ─────────────────────────────────────────────
+  // ── Header ─────────────────────────────────────────────
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -414,21 +474,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     );
   }
 
-  // ── 金額入力エリア ──────────────────────────────────────
-  //
-  // 設計:
-  // 配置領域は「左端〜トグル手前16px」で固定(幅 = maxAmountWidth)
-  //  - 中央配置モード: Alignment.x を計算して画面全体の中央に見せる
-  //  - 右端固定モード: Alignment.centerRight で右端に貼り付け
-  //
-  // オーバーフロー防止:
-  // 金額コンテンツを FittedBox(scaleDown) で包むことで、
-  // 最小フォントサイズ(_kMinFs)でも収まらない場合でも
-  // 最終手段として物理的に縮小して必ず配置領域内に収める。
-  //
-  // 間隔:
-  // 金額エリア高さは金額テキストのフォント高さ(fs * 1.0)に統一し、
-  // その下に SizedBox(height: 8) で換算表示との間隔を確保する。
+  // ── Amount input area with vertical swap animation ──────────────
   Widget _buildAmountInputArea(double sw) {
     const btcIconWidth = 36.0;
     const gap = 16.0;
@@ -441,27 +487,25 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     final targetFs = _computeTargetFs(maxAmountWidth);
     final actualWidth = _measureAmountWidth(targetFs);
 
-    // 中央配置時の右端位置 > maxAmountWidth なら右端固定モード
     final centeredRightEdge = totalWidth / 2 + actualWidth / 2;
     final shouldPinRight = centeredRightEdge > maxAmountWidth;
 
-    // 中央配置モードの Alignment.x 計算
-    // 入力が空の場合はモードに関わらず固定センター(ズレ防止)
     final slack = maxAmountWidth - actualWidth;
     final centerAlignX = _rawDigits.isEmpty
         ? (btcIconWidth + gap) / (maxAmountWidth - 1)
         : slack > 1.0
-            ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
-            : 0.0;
+        ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
+        : 0.0;
 
-    // 金額エリアの高さ = 最大フォントサイズの行高(height: 1 で描画)
-    // これにより、どの fs でも同じベースラインで描画される
     const amountAreaHeight = _kMaxFs;
 
     final isEmpty = _rawDigits.isEmpty;
     final amountColor = isEmpty
         ? const Color(0xFFB0B0B0)
         : const Color(0xFF1A1A1A);
+
+    // The vertical offset distance for the swap (pixels)
+    const swapDistance = 40.0;
 
     return GestureDetector(
       onTap: () => setState(() => _showKeyboard = true),
@@ -473,26 +517,103 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // 金額表示(配置領域 = 左端〜トグル手前16px)
+                // ── Main amount display (with swap animation) ──
                 Positioned.fill(
                   right: btcIconWidth + gap,
-                  child: Align(
-                    alignment: shouldPinRight
-                        ? Alignment.centerRight
-                        : Alignment(centerAlignX, 0),
-                    // FittedBox で最終安全策: 最小フォントでも収まらない
-                    // ケースでも物理的に縮小して必ず収める
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: shouldPinRight
-                          ? Alignment.centerRight
-                          : Alignment.center,
-                      child: _buildAmountContent(targetFs, amountColor),
-                    ),
+                  child: AnimatedBuilder(
+                    animation: _swapCtrl,
+                    builder: (context, _) {
+                      if (!_isAnimating) {
+                        // Static state — show current value
+                        return Align(
+                          alignment: shouldPinRight
+                              ? Alignment.centerRight
+                              : Alignment(centerAlignX, 0),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: shouldPinRight
+                                ? Alignment.centerRight
+                                : Alignment.center,
+                            child: _buildAmountRow(
+                              _isBtcMode ? _btcDisplayValue : _formattedAmount,
+                              _isBtcMode ? 'BTC' : '円',
+                              targetFs,
+                              amountColor,
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Animating — show outgoing + incoming
+                      return ClipRect(
+                        child: Stack(
+                          children: [
+                            // Outgoing (current → up + fade out)
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: _outFade.value,
+                                child: Transform.translate(
+                                  offset: Offset(
+                                    0,
+                                    _outSlide.value * swapDistance,
+                                  ),
+                                  child: Align(
+                                    alignment: shouldPinRight
+                                        ? Alignment.centerRight
+                                        : Alignment(centerAlignX, 0),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: shouldPinRight
+                                          ? Alignment.centerRight
+                                          : Alignment.center,
+                                      child: _buildAmountRow(
+                                        _prevMainText,
+                                        _prevMainSuffix,
+                                        targetFs,
+                                        amountColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Incoming (below → into place + fade in)
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: _inFade.value,
+                                child: Transform.translate(
+                                  offset: Offset(
+                                    0,
+                                    _inSlide.value * swapDistance,
+                                  ),
+                                  child: Align(
+                                    alignment: shouldPinRight
+                                        ? Alignment.centerRight
+                                        : Alignment(centerAlignX, 0),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: shouldPinRight
+                                          ? Alignment.centerRight
+                                          : Alignment.center,
+                                      child: _buildAmountRow(
+                                        _nextMainText,
+                                        _nextMainSuffix,
+                                        targetFs,
+                                        amountColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
 
-                // 切り替えボタン(右端固定)
+                // ── Toggle button (right side, fixed) ──
                 Positioned(
                   right: 0,
                   top: 0,
@@ -501,28 +622,33 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
                     child: GestureDetector(
                       onTap: _toggleMode,
                       behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RotationTransition(
-                            turns: _iconSpin,
-                            child: const Icon(
-                              Icons.cached,
-                              color: Color(0xFF333333),
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _isBtcMode ? '円' : 'BTC',
-                            style: _hiraFont.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF333333),
-                              height: 1,
-                            ),
-                          ),
-                        ],
+                      child: AnimatedBuilder(
+                        animation: _swapCtrl,
+                        builder: (context, _) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              RotationTransition(
+                                turns: _iconSpin,
+                                child: const Icon(
+                                  Icons.cached,
+                                  color: Color(0xFF333333),
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _isBtcMode ? '円' : 'BTC',
+                                style: _hiraFont.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF333333),
+                                  height: 1,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -531,31 +657,69 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
             ),
           ),
           const SizedBox(height: amountToSubSpacing),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position:
-                    Tween<Offset>(
-                      begin: const Offset(0, 0.4),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+
+          // ── Sub text (swap: old slides up, new slides up from below) ──
+          SizedBox(
+            height: 20,
+            child: AnimatedBuilder(
+              animation: _swapCtrl,
+              builder: (context, _) {
+                if (!_isAnimating) {
+                  return Text(
+                    _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC',
+                    textAlign: TextAlign.center,
+                    style: _hiraFont.copyWith(
+                      color: const Color(0xFF4D4D4D),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w300,
+                      height: 1,
                     ),
-                child: child,
-              ),
-            ),
-            child: Text(
-              _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC',
-              key: ValueKey(_isBtcMode),
-              textAlign: TextAlign.center,
-              style: _hiraFont.copyWith(
-                color: const Color(0xFF4D4D4D),
-                fontSize: 13,
-                fontWeight: FontWeight.w300,
-                height: 1,
-              ),
+                  );
+                }
+
+                const subSwapDist = 24.0;
+                return ClipRect(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outgoing sub
+                      Opacity(
+                        opacity: _outFade.value,
+                        child: Transform.translate(
+                          offset: Offset(0, _outSlide.value * subSwapDist),
+                          child: Text(
+                            _prevSubText,
+                            textAlign: TextAlign.center,
+                            style: _hiraFont.copyWith(
+                              color: const Color(0xFF4D4D4D),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w300,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Incoming sub
+                      Opacity(
+                        opacity: _inFade.value,
+                        child: Transform.translate(
+                          offset: Offset(0, _inSlide.value * subSwapDist),
+                          child: Text(
+                            _nextSubText,
+                            textAlign: TextAlign.center,
+                            style: _hiraFont.copyWith(
+                              color: const Color(0xFF4D4D4D),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w300,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -563,74 +727,35 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildAmountContent(double targetFs, Color amountColor) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 420),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      layoutBuilder: (current, previous) => Stack(
-        alignment: Alignment.center,
-        children: [...previous, ?current],
-      ),
-      transitionBuilder: (child, anim) {
-        final isIncoming = child.key == ValueKey(_isBtcMode);
-        // 退場: 0→-90度（奥へ倒れる）、登場: 90→0度（奥から起き上がる）
-        final angle = Tween<double>(
-          begin: isIncoming ? 1.5708 : 0.0,   // π/2
-          end:   isIncoming ? 0.0    : -1.5708,
-        ).animate(anim);
-        return AnimatedBuilder(
-          animation: angle,
-          child: child,
-          builder: (_, w) {
-            final v = angle.value;
-            // 前半(退場)は非表示、後半(登場)は表示
-            if (!isIncoming && v < -1.0) return const SizedBox.shrink();
-            if (isIncoming  && v >  1.0) return const SizedBox.shrink();
-            return Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001)   // perspective
-                ..rotateX(v),
-              child: w,
-            );
-          },
-        );
-      },
-      child: TweenAnimationBuilder<double>(
-        key: ValueKey(_isBtcMode),
-        tween: Tween<double>(end: targetFs),
-        duration: const Duration(milliseconds: 230),
-        curve: Curves.easeOutCubic,
-        builder: (context, fs, child) => Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              _isBtcMode ? _btcDisplayValue : _formattedAmount,
-              style: _hiraFont.copyWith(
-                fontSize: fs,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -2,
-                color: amountColor,
-                height: 1,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 3),
-              child: Text(
-                _isBtcMode ? 'BTC' : '円',
-                style: _hiraFont.copyWith(
-                  fontSize: fs * 0.28,
-                  fontWeight: FontWeight.w300,
-                  color: amountColor,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ],
+  /// Static amount row (no animation state)
+  Widget _buildAmountRow(String text, String suffix, double fs, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          text,
+          style: _hiraFont.copyWith(
+            fontSize: fs,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -2,
+            color: color,
+            height: 1,
+          ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.only(left: 3),
+          child: Text(
+            suffix,
+            style: _hiraFont.copyWith(
+              fontSize: fs * 0.28,
+              fontWeight: FontWeight.w300,
+              color: color,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -865,12 +990,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
             elevation: 0,
           ),
           onPressed: () {
-            showOrderCompleteDialog(
-              context,
-              onViewHistory: () {
-                // TODO: 注文履歴画面への遷移処理
-              },
-            );
+            showOrderCompleteDialog(context, onViewHistory: () {});
           },
           child: Text(
             '注文を確認',
@@ -921,12 +1041,7 @@ class _BuyPageState extends State<BuyPage> with SingleTickerProviderStateMixin {
                 ),
                 onPressed: () {
                   setState(() => _showKeyboard = false);
-                  showOrderCompleteDialog(
-                    context,
-                    onViewHistory: () {
-                      // TODO: 注文履歴画面への遷移処理
-                    },
-                  );
+                  showOrderCompleteDialog(context, onViewHistory: () {});
                 },
                 child: Text(
                   '注文を確認',

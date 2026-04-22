@@ -1341,7 +1341,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           Navigator.push(
             context,
             PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => const AssetsPage(),
+              pageBuilder: (ctx, a1, a2) => AssetsPage(),
               transitionDuration: const Duration(milliseconds: 250),
               reverseTransitionDuration: const Duration(milliseconds: 200),
               transitionsBuilder: (ctx, anim, a2, child) =>
