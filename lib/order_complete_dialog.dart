@@ -120,7 +120,6 @@ class _OrderCompleteDialogState extends State<_OrderCompleteDialog> {
                 GestureDetector(
                   onTap: () {
                     Navigator.of(context).pop();
-                    // TODO: 注文履歴画面への遷移
                   },
                   child: Container(
                     width: 123.5,

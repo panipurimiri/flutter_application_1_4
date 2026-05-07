@@ -1,4 +1,6 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'order_complete_dialog.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
@@ -24,16 +26,10 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
 
   // ── Swap animation controller ──
   late AnimationController _swapCtrl;
-  // Position of outgoing main text: 0 → -1 (slides up & fades)
   late Animation<double> _outSlide;
-  // Position of incoming main text: 1 → 0 (slides up into place)
   late Animation<double> _inSlide;
-  // Fade for outgoing
   late Animation<double> _outFade;
-  // Fade for incoming
   late Animation<double> _inFade;
-  // ↑↓ icon rotation
-  late Animation<double> _iconSpin;
 
   @override
   void initState() {
@@ -43,34 +39,30 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 350),
     );
 
-    _outSlide = Tween<double>(begin: 0.0, end: -1.0).animate(
+    _outSlide = Tween<double>(begin: 0.0, end: 0.6).animate(
       CurvedAnimation(
         parent: _swapCtrl,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeInCubic),
+        curve: const Interval(0.0, 0.8, curve: Curves.easeInOutCubic),
       ),
     );
     _outFade = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _swapCtrl,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+        curve: const Interval(0.1, 0.7, curve: Curves.easeOut),
       ),
     );
-    _inSlide = Tween<double>(begin: 1.0, end: 0.0).animate(
+    _inSlide = Tween<double>(begin: -0.6, end: 0.0).animate(
       CurvedAnimation(
         parent: _swapCtrl,
-        curve: const Interval(0.15, 0.85, curve: Curves.easeOutCubic),
+        curve: const Interval(0.2, 1.0, curve: Curves.easeInOutCubic),
       ),
     );
     _inFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _swapCtrl,
-        curve: const Interval(0.2, 0.7, curve: Curves.easeOut),
+        curve: const Interval(0.3, 0.9, curve: Curves.easeIn),
       ),
     );
-    _iconSpin = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _swapCtrl, curve: Curves.easeOutBack));
   }
 
   @override
@@ -80,32 +72,89 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   }
 
   // ── Stored values for the crossfade ──
-  // We snapshot old/new display strings so the outgoing text stays readable
   String _prevMainText = '0';
-  String _prevMainSuffix = '円';
+  String _prevMainSuffix = 'JPY';
   String _prevSubText = '0 BTC';
   String _nextMainText = '0';
-  String _nextMainSuffix = '円';
-  String _nextSubText = '0 BTC';
+  String _nextMainSuffix = 'BTC';
+  String _nextSubText = '0 JPY';
   bool _isAnimating = false;
 
+  // ── Frozen layout metrics (locked at animation start) ──
+  double _prevTargetFs = _kMaxFs;
+  double _nextTargetFs = _kMaxFs;
+  bool _frozenShouldPinRight = false;
+  double _frozenCenterAlignX = 0.0;
+
   void _toggleMode() {
-    // Snapshot current values before switching
+    // 1) Snapshot OUTGOING values (current mode, before flip)
     _prevMainText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
     _prevMainSuffix = _isBtcMode ? 'BTC' : '円';
     _prevSubText = _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC';
 
-    setState(() {
-      _isBtcMode = !_isBtcMode;
-      // Don't clear _rawDigits — preserve the converted value
-    });
+    // 2) Flip mode
+    _isBtcMode = !_isBtcMode;
 
-    // Snapshot new values after switching
+    // 3) Snapshot INCOMING values (new mode, after flip)
     _nextMainText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
     _nextMainSuffix = _isBtcMode ? 'BTC' : '円';
     _nextSubText = _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC';
 
+    // 4) Freeze layout metrics so they stay constant during animation
+    //    Use the LARGER of outgoing/incoming to avoid clipping either.
+    final sw = MediaQuery.of(context).size.width;
+    const btcIconWidth = 36.0;
+    const gap = 16.0;
+    const horizontalPadding = 16.0;
+    final totalWidth = sw - horizontalPadding * 2;
+    final maxAmountWidth = totalWidth - btcIconWidth - gap;
+
+    final prevWidth = _measureTextWidth(
+      _prevMainText,
+      _prevMainSuffix,
+      _kMaxFs,
+    );
+    final nextWidth = _measureTextWidth(
+      _nextMainText,
+      _nextMainSuffix,
+      _kMaxFs,
+    );
+
+    if (prevWidth <= maxAmountWidth) {
+      _prevTargetFs = _kMaxFs;
+    } else {
+      _prevTargetFs = (_kMaxFs * maxAmountWidth / prevWidth).clamp(
+        _kMinFs,
+        _kMaxFs,
+      );
+    }
+
+    if (nextWidth <= maxAmountWidth) {
+      _nextTargetFs = _kMaxFs;
+    } else {
+      _nextTargetFs = (_kMaxFs * maxAmountWidth / nextWidth).clamp(
+        _kMinFs,
+        _kMaxFs,
+      );
+    }
+
+    final actualWidth = _measureTextWidth(
+      _nextMainText,
+      _nextMainSuffix,
+      _nextTargetFs,
+    );
+    final centeredRightEdge = totalWidth / 2 + actualWidth / 2;
+    _frozenShouldPinRight = centeredRightEdge > maxAmountWidth;
+    final slack = maxAmountWidth - actualWidth;
+    _frozenCenterAlignX = _rawDigits.isEmpty
+        ? (btcIconWidth + gap) / (maxAmountWidth - 1)
+        : slack > 1.0
+        ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
+        : 0.0;
+
+    // 5) Start animation & rebuild together – no gap frame
     _isAnimating = true;
+    setState(() {});
     _swapCtrl.forward(from: 0).then((_) {
       if (mounted) setState(() => _isAnimating = false);
     });
@@ -116,40 +165,36 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   String get _formattedAmount {
     if (_rawDigits.isEmpty) return '0';
     final n = int.tryParse(_rawDigits) ?? 0;
-    return _commaSep(n);
+    if (n == 0) return '0';
+    return NumberFormat('#,###').format(n);
   }
 
   String get _btcFromJpy {
     if (_rawDigits.isEmpty) return '0';
-    final n = int.tryParse(_rawDigits) ?? 0;
-    if (n == 0) return '0';
-    final btc = n / _kBtcRate;
+    final jpy = double.tryParse(_rawDigits) ?? 0.0;
+    if (jpy == 0) return '0';
+    final btc = jpy / _kBtcRate;
     return btc
-        .toStringAsFixed(15)
+        .toStringAsFixed(10)
         .replaceAll(RegExp(r'0+$'), '')
         .replaceAll(RegExp(r'\.$'), '');
   }
 
   String get _btcDisplayValue {
     if (_rawDigits.isEmpty || _rawDigits == '.') return '0';
+    // 小数点以下の表示を考慮
     return _rawDigits;
   }
 
   String get _jpyFromBtc {
-    final btc = double.tryParse(_rawDigits) ?? 0;
+    if (_rawDigits.isEmpty || _rawDigits == '.') return '0';
+    final btc = double.tryParse(_rawDigits) ?? 0.0;
     if (btc == 0) return '0';
-    return _commaSep((btc * _kBtcRate).toInt());
+    final jpy = (btc * _kBtcRate).toInt();
+    return NumberFormat('#,###').format(jpy);
   }
 
-  String _commaSep(int n) {
-    final s = n.toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
-      buf.write(s[i]);
-    }
-    return buf.toString();
-  }
+  // 古い _commaSep は削除
 
   // ── Operations ────────────────────────────────────────
   void _quickAdd(int amount) {
@@ -163,7 +208,9 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   void _onKey(String key) {
     setState(() {
       if (key == '⌫') {
-        if (_rawDigits.isNotEmpty) {
+        if (_rawDigits.length <= 1) {
+          _rawDigits = '';
+        } else {
           _rawDigits = _rawDigits.substring(0, _rawDigits.length - 1);
         }
       } else if (key == '.') {
@@ -171,18 +218,13 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
           _rawDigits = _rawDigits.isEmpty ? '0.' : '$_rawDigits.';
         }
       } else {
-        if (_rawDigits.replaceAll('.', '').length >= 12) return;
-        if (_isBtcMode) {
-          if (_rawDigits == '0') {
-            _rawDigits = key;
-          } else {
-            _rawDigits += key;
-          }
+        // 最大入力桁数の制限
+        if (_rawDigits.replaceAll('.', '').length >= 10) return;
+
+        if (_rawDigits == '0') {
+          if (key != '0') _rawDigits = key;
         } else {
           _rawDigits += key;
-          while (_rawDigits.length > 1 && _rawDigits.startsWith('0')) {
-            _rawDigits = _rawDigits.substring(1);
-          }
         }
       }
     });
@@ -192,32 +234,37 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
     if (_showKeyboard) setState(() => _showKeyboard = false);
   }
 
-  // ── Measure text width ──────────────────────────────
-  double _measureAmountWidth(double fs) {
-    final displayText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
-    final suffixText = _isBtcMode ? 'BTC' : '円';
+  // ── Measure text width (for given text/suffix, not current state) ──
+  double _measureTextWidth(String text, String suffix, double fs) {
     final amountTp = TextPainter(
       text: TextSpan(
-        text: displayText,
+        text: text,
         style: _hiraFont.copyWith(
           fontSize: fs,
           fontWeight: FontWeight.w600,
           letterSpacing: -2,
         ),
       ),
-      textDirection: TextDirection.ltr,
+      textDirection: ui.TextDirection.ltr,
     )..layout();
     final suffixTp = TextPainter(
       text: TextSpan(
-        text: suffixText,
+        text: suffix,
         style: _hiraFont.copyWith(
           fontSize: fs * 0.36,
           fontWeight: FontWeight.w300,
         ),
       ),
-      textDirection: TextDirection.ltr,
+      textDirection: ui.TextDirection.ltr,
     )..layout();
     return amountTp.width + 3.0 + suffixTp.width;
+  }
+
+  // Convenience: measure using current live state
+  double _measureAmountWidth(double fs) {
+    final displayText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
+    final suffixText = _isBtcMode ? 'BTC' : '円';
+    return _measureTextWidth(displayText, suffixText, fs);
   }
 
   double _computeTargetFs(double availableWidth) {
@@ -426,7 +473,7 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
         ),
         const SizedBox(width: 2),
         Text(
-          '円',
+          'JPY',
           style: _hiraFont.copyWith(
             color: const Color(0xFF222222),
             fontSize: 12,
@@ -478,265 +525,221 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   Widget _buildAmountInputArea(double sw) {
     const btcIconWidth = 36.0;
     const gap = 16.0;
-    const horizontalPadding = 16.0;
+    const horizontalPadding = 8.0;
     const amountToSubSpacing = 8.0;
 
     final totalWidth = sw - horizontalPadding * 2;
     final maxAmountWidth = totalWidth - btcIconWidth - gap;
 
-    final targetFs = _computeTargetFs(maxAmountWidth);
-    final actualWidth = _measureAmountWidth(targetFs);
+    // When animating, use frozen values; otherwise compute live
+    final double targetFs;
+    final bool shouldPinRight;
+    final double centerAlignX;
 
-    final centeredRightEdge = totalWidth / 2 + actualWidth / 2;
-    final shouldPinRight = centeredRightEdge > maxAmountWidth;
-
-    final slack = maxAmountWidth - actualWidth;
-    final centerAlignX = _rawDigits.isEmpty
-        ? (btcIconWidth + gap) / (maxAmountWidth - 1)
-        : slack > 1.0
-        ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
-        : 0.0;
+    if (_isAnimating) {
+      targetFs = _nextTargetFs; // For live calculation, we'll use next as base
+      shouldPinRight = _frozenShouldPinRight;
+      centerAlignX = _frozenCenterAlignX;
+    } else {
+      targetFs = _computeTargetFs(maxAmountWidth);
+      final actualWidth = _measureAmountWidth(targetFs);
+      final centeredRightEdge = totalWidth / 2 + actualWidth / 2;
+      shouldPinRight = centeredRightEdge > maxAmountWidth;
+      final slack = maxAmountWidth - actualWidth;
+      centerAlignX = _rawDigits.isEmpty
+          ? (btcIconWidth + gap) / (maxAmountWidth - 1)
+          : slack > 1.0
+          ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
+          : 0.0;
+    }
 
     const amountAreaHeight = _kMaxFs;
-
     final isEmpty = _rawDigits.isEmpty;
     final amountColor = isEmpty
         ? const Color(0xFFB0B0B0)
         : const Color(0xFF1A1A1A);
-
-    // The vertical offset distance for the swap (pixels)
-    const swapDistance = 40.0;
+    const subColor = Color(0xFF4D4D4D);
+    const subFs = 13.0;
 
     return GestureDetector(
       onTap: () => setState(() => _showKeyboard = true),
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          SizedBox(
-            height: amountAreaHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
+      child: AnimatedBuilder(
+        animation: _swapCtrl,
+        builder: (context, _) {
+          if (!_isAnimating) {
+            // ── Static Layout ──
+            return Column(
               children: [
-                // ── Main amount display (with swap animation) ──
-                Positioned.fill(
-                  right: btcIconWidth + gap,
-                  child: AnimatedBuilder(
-                    animation: _swapCtrl,
-                    builder: (context, _) {
-                      if (!_isAnimating) {
-                        // Static state — show current value
-                        return Align(
-                          alignment: shouldPinRight
-                              ? Alignment.centerRight
-                              : Alignment(centerAlignX, 0),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: shouldPinRight
-                                ? Alignment.centerRight
-                                : Alignment.center,
-                            child: _buildAmountRow(
-                              _isBtcMode ? _btcDisplayValue : _formattedAmount,
-                              _isBtcMode ? 'BTC' : '円',
-                              targetFs,
-                              amountColor,
-                            ),
-                          ),
-                        );
-                      }
-
-                      // Animating — show outgoing + incoming
-                      return ClipRect(
-                        child: Stack(
-                          children: [
-                            // Outgoing (current → up + fade out)
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: _outFade.value,
-                                child: Transform.translate(
-                                  offset: Offset(
-                                    0,
-                                    _outSlide.value * swapDistance,
-                                  ),
-                                  child: Align(
-                                    alignment: shouldPinRight
-                                        ? Alignment.centerRight
-                                        : Alignment(centerAlignX, 0),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: shouldPinRight
-                                          ? Alignment.centerRight
-                                          : Alignment.center,
-                                      child: _buildAmountRow(
-                                        _prevMainText,
-                                        _prevMainSuffix,
-                                        targetFs,
-                                        amountColor,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Incoming (below → into place + fade in)
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: _inFade.value,
-                                child: Transform.translate(
-                                  offset: Offset(
-                                    0,
-                                    _inSlide.value * swapDistance,
-                                  ),
-                                  child: Align(
-                                    alignment: shouldPinRight
-                                        ? Alignment.centerRight
-                                        : Alignment(centerAlignX, 0),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: shouldPinRight
-                                          ? Alignment.centerRight
-                                          : Alignment.center,
-                                      child: _buildAmountRow(
-                                        _nextMainText,
-                                        _nextMainSuffix,
-                                        targetFs,
-                                        amountColor,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // ── Toggle button (right side, fixed) ──
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: _toggleMode,
-                      behavior: HitTestBehavior.opaque,
-                      child: AnimatedBuilder(
-                        animation: _swapCtrl,
-                        builder: (context, _) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              RotationTransition(
-                                turns: _iconSpin,
-                                child: const Icon(
-                                  Icons.cached,
-                                  color: Color(0xFF333333),
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _isBtcMode ? '円' : 'BTC',
-                                style: _hiraFont.copyWith(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF333333),
-                                  height: 1,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: amountToSubSpacing),
-
-          // ── Sub text (swap: old slides up, new slides up from below) ──
-          SizedBox(
-            height: 20,
-            child: AnimatedBuilder(
-              animation: _swapCtrl,
-              builder: (context, _) {
-                if (!_isAnimating) {
-                  return Text(
-                    _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC',
-                    textAlign: TextAlign.center,
-                    style: _hiraFont.copyWith(
-                      color: const Color(0xFF4D4D4D),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w300,
-                      height: 1,
-                    ),
-                  );
-                }
-
-                const subSwapDist = 24.0;
-                return ClipRect(
+                SizedBox(
+                  height: amountAreaHeight,
                   child: Stack(
-                    alignment: Alignment.center,
                     children: [
-                      // Outgoing sub
-                      Opacity(
-                        opacity: _outFade.value,
-                        child: Transform.translate(
-                          offset: Offset(0, _outSlide.value * subSwapDist),
-                          child: Text(
-                            _prevSubText,
-                            textAlign: TextAlign.center,
-                            style: _hiraFont.copyWith(
-                              color: const Color(0xFF4D4D4D),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w300,
-                              height: 1,
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: btcIconWidth + gap,
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: _AmountDisplay(
+                                formatted: _isBtcMode
+                                    ? _btcDisplayValue
+                                    : _formattedAmount,
+                                suffix: _isBtcMode ? 'BTC' : '円',
+                                fontSize: targetFs,
+                                color: amountColor,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      // Incoming sub
-                      Opacity(
-                        opacity: _inFade.value,
-                        child: Transform.translate(
-                          offset: Offset(0, _inSlide.value * subSwapDist),
-                          child: Text(
-                            _nextSubText,
-                            textAlign: TextAlign.center,
-                            style: _hiraFont.copyWith(
-                              color: const Color(0xFF4D4D4D),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w300,
-                              height: 1,
-                            ),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _CurrencyToggleBadge(
+                            isBtcMode: _isBtcMode,
+                            onToggle: _toggleMode,
                           ),
                         ),
                       ),
                     ],
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: amountToSubSpacing),
+                SizedBox(
+                  height: 20,
+                  child: Text(
+                    _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC',
+                    textAlign: TextAlign.center,
+                    style: _hiraFont.copyWith(
+                      color: subColor,
+                      fontSize: subFs,
+                      fontWeight: FontWeight.w300,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // ── Animating Layout: Unified Swap ──
+          final t = _swapCtrl.value; // 0.0 to 1.0
+          final centerToSubDist =
+              amountAreaHeight / 2 + amountToSubSpacing + 10;
+
+          // Outgoing (Main -> Sub)
+          final outgoingFs = ui.lerpDouble(_prevTargetFs, subFs, t)!;
+          final outgoingColor = Color.lerp(amountColor, subColor, t)!;
+          final outgoingTop =
+              (amountAreaHeight / 2 - outgoingFs / 2) + (t * centerToSubDist);
+
+          // Incoming (Sub -> Main)
+          final incomingFs = ui.lerpDouble(subFs, _nextTargetFs, t)!;
+          final incomingColor = Color.lerp(subColor, amountColor, t)!;
+          final incomingTop =
+              (amountAreaHeight + amountToSubSpacing + 10 - incomingFs / 2) -
+              (t * centerToSubDist);
+
+          return SizedBox(
+            height: amountAreaHeight + amountToSubSpacing + 20,
+            child: Stack(
+              children: [
+                // Outgoing Text (Main -> Sub)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: outgoingTop,
+                  child: Opacity(
+                    opacity: _outFade.value,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: btcIconWidth + gap,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.center,
+                          child: _StaticAmountDisplay(
+                            formatted: _prevMainText,
+                            suffix: _prevMainSuffix,
+                            fontSize: outgoingFs,
+                            color: outgoingColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Incoming Text (Sub -> Main)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: incomingTop,
+                  child: Opacity(
+                    opacity: _inFade.value,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: btcIconWidth + gap,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.center,
+                          child: _StaticAmountDisplay(
+                            formatted: _nextMainText,
+                            suffix: _nextMainSuffix,
+                            fontSize: incomingFs,
+                            color: incomingColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Toggle Button
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  height: amountAreaHeight,
+                  child: Center(
+                    child: _CurrencyToggleBadge(
+                      isBtcMode: _isBtcMode,
+                      onToggle: _toggleMode,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  /// Static amount row (no animation state)
-  Widget _buildAmountRow(String text, String suffix, double fs, Color color) {
+  // ── Static Display for Animation (Avoids internal digit animations) ──
+  Widget _StaticAmountDisplay({
+    required String formatted,
+    required String suffix,
+    required double fontSize,
+    required Color color,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          text,
+          formatted,
           style: _hiraFont.copyWith(
-            fontSize: fs,
+            fontSize: fontSize,
             fontWeight: FontWeight.w600,
             letterSpacing: -2,
             color: color,
@@ -748,10 +751,10 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
           child: Text(
             suffix,
             style: _hiraFont.copyWith(
-              fontSize: fs * 0.28,
+              fontSize: fontSize * 0.36,
               fontWeight: FontWeight.w300,
               color: color,
-              height: 1.5,
+              height: 1.2,
             ),
           ),
         ),
@@ -781,7 +784,7 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
             ),
             alignment: Alignment.center,
             child: Text(
-              '+${_commaSep(amount)}',
+              '+${NumberFormat('#,###').format(amount)}',
               style: _hiraFont.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w300,
@@ -1084,38 +1087,292 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   }
 
   Widget _buildKey(String key) {
-    return GestureDetector(
-      onTap: () => _onKey(key),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x22000000),
-              blurRadius: 1,
-              offset: Offset(0, 1),
-            ),
-          ],
+    // '.' は BTCモードのみ有効
+    final isEnabled = key != '.' || _isBtcMode;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isEnabled ? () => _onKey(key) : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: isEnabled
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isEnabled
+                ? const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      blurRadius: 1,
+                      offset: Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: key == '⌫'
+                ? Icon(
+                    Icons.backspace_outlined,
+                    size: 20,
+                    color: isEnabled
+                        ? const Color(0xFF333333)
+                        : const Color(0xFFBBBBBB),
+                  )
+                : Text(
+                    key,
+                    textAlign: TextAlign.center,
+                    style: _hiraFont.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isEnabled
+                          ? const Color(0xFF333333)
+                          : const Color(0xFFBBBBBB),
+                      height: 1,
+                    ),
+                  ),
+          ),
         ),
-        child: Center(
-          child: key == '⌫'
-              ? const Icon(
-                  Icons.backspace_outlined,
-                  size: 20,
-                  color: Color(0xFF333333),
-                )
-              : Text(
-                  key,
-                  textAlign: TextAlign.center,
-                  style: _hiraFont.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF333333),
-                    height: 1,
+      ),
+    );
+  }
+}
+
+// ── Animated Amount Display (Typed digit animation) ──────────────────
+class _AmountDisplay extends StatefulWidget {
+  final String formatted;
+  final String suffix;
+  final double fontSize;
+  final Color color;
+
+  const _AmountDisplay({
+    required this.formatted,
+    required this.suffix,
+    required this.fontSize,
+    required this.color,
+  });
+
+  @override
+  State<_AmountDisplay> createState() => _AmountDisplayState();
+}
+
+class _AmountDisplayState extends State<_AmountDisplay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnim;
+  late Animation<double> _fadeAnim;
+
+  String _prevFormatted = '0';
+  int _animCharIndex = -1;
+  bool _isAdding = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _prevFormatted = widget.formatted;
+
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 220),
+      vsync: this,
+    );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.8),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+    _fadeAnim = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+  }
+
+  @override
+  void didUpdateWidget(_AmountDisplay old) {
+    super.didUpdateWidget(old);
+
+    final curr = widget.formatted;
+    final prev = _prevFormatted;
+
+    if (curr != prev) {
+      _isAdding = curr.length >= prev.length;
+      _animCharIndex = curr.length - 1;
+
+      _slideAnim = Tween<Offset>(
+        begin: Offset(0, _isAdding ? 0.8 : -0.8),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+
+      _controller.forward(from: 0);
+      _prevFormatted = curr;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chars = widget.formatted.characters.toList();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        ...List.generate(chars.length, (i) {
+          final ch = chars[i];
+          final isAnimTarget = (i == _animCharIndex);
+
+          // カンマ・ドットは静的
+          if (ch == ',' || ch == '.') {
+            return Text(
+              ch,
+              style: _hiraFont.copyWith(
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -2,
+                color: widget.color,
+                height: 1,
+              ),
+            );
+          }
+
+          if (isAnimTarget) {
+            return ClipRect(
+              child: SlideTransition(
+                position: _slideAnim,
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Text(
+                    ch,
+                    style: _hiraFont.copyWith(
+                      fontSize: widget.fontSize,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -2,
+                      color: widget.color,
+                      height: 1,
+                    ),
                   ),
                 ),
+              ),
+            );
+          }
+
+          return Text(
+            ch,
+            style: _hiraFont.copyWith(
+              fontSize: widget.fontSize,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -2,
+              color: widget.color,
+              height: 1,
+            ),
+          );
+        }),
+        Padding(
+          padding: const EdgeInsets.only(left: 3),
+          child: Text(
+            widget.suffix,
+            style: _hiraFont.copyWith(
+              fontSize: widget.fontSize * 0.36,
+              fontWeight: FontWeight.w300,
+              color: widget.color,
+              height: 1.2,
+            ),
+          ),
         ),
+      ],
+    );
+  }
+}
+
+// ── Currency Toggle Badge (3D Flip Animation) ──────────────────────
+class _CurrencyToggleBadge extends StatefulWidget {
+  final bool isBtcMode;
+  final VoidCallback onToggle;
+
+  const _CurrencyToggleBadge({required this.isBtcMode, required this.onToggle});
+
+  @override
+  State<_CurrencyToggleBadge> createState() => _CurrencyToggleBadgeState();
+}
+
+class _CurrencyToggleBadgeState extends State<_CurrencyToggleBadge>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _rotateAnim;
+  bool _localBtcMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _localBtcMode = widget.isBtcMode;
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 320),
+      vsync: this,
+    );
+    _rotateAnim = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void didUpdateWidget(_CurrencyToggleBadge old) {
+    super.didUpdateWidget(old);
+    if (widget.isBtcMode != _localBtcMode) {
+      // 親からの変更（クイックボタンなどでモードが変わる場合など）に同期
+      setState(() => _localBtcMode = widget.isBtcMode);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward(from: 0).then((_) {
+      _controller.value = 0; // Reset to 0 so it's not upside down
+      setState(() => _localBtcMode = !_localBtcMode);
+      widget.onToggle();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _rotateAnim,
+            builder: (context, _) {
+              return Transform.rotate(
+                angle: _rotateAnim.value * 3.141592653589793, // 180度回転
+                child: const Icon(
+                  Icons.sync,
+                  color: Color(0xFF333333),
+                  size: 24,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _localBtcMode ? '円' : 'BTC',
+            style: _hiraFont.copyWith(
+              color: const Color(0xFF333333),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -33,9 +33,17 @@ class _SurveySectionState extends State<SurveySection>
   static const _watchRatio = 0.76;
 
   // 週間データ（Figmaより）
-  static const _weekLabels = ['9/23', '9/24', '9/25', '9/26', '9/27', '9/28', '9/29'];
+  static const _weekLabels = [
+    '9/23',
+    '9/24',
+    '9/25',
+    '9/26',
+    '9/27',
+    '9/28',
+    '9/29',
+  ];
   static const _attackData = [76, 80, 64, 88, 40, 22, 20];
-  static const _watchData  = [24, 20, 36, 12, 60, 78, 80];
+  static const _watchData = [24, 20, 36, 12, 60, 78, 80];
 
   @override
   void initState() {
@@ -403,21 +411,27 @@ class _SurveySectionState extends State<SurveySection>
               children: [
                 _buildLegendDot(_statusInfoFont),
                 const SizedBox(width: 4),
-                const Text('攻め！追加するべき！',
-                    style: TextStyle(
-                        color: _fontBody,
-                        fontSize: 10,
-                        fontFamily: _fontFamily,
-                        fontWeight: FontWeight.w300)),
+                const Text(
+                  '攻め！追加するべき！',
+                  style: TextStyle(
+                    color: _fontBody,
+                    fontSize: 10,
+                    fontFamily: _fontFamily,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
                 const SizedBox(width: 12),
                 _buildLegendDot(_statusSuccessFont),
                 const SizedBox(width: 4),
-                const Text('とりあえず様子を見る',
-                    style: TextStyle(
-                        color: _fontBody,
-                        fontSize: 10,
-                        fontFamily: _fontFamily,
-                        fontWeight: FontWeight.w300)),
+                const Text(
+                  'とりあえず様子を見る',
+                  style: TextStyle(
+                    color: _fontBody,
+                    fontSize: 10,
+                    fontFamily: _fontFamily,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
               ],
             ),
           ],
@@ -545,14 +559,14 @@ class _SurveySectionState extends State<SurveySection>
   Widget _buildCoinHeader() {
     return Row(
       children: [
-        // BTCアイコン（仮画像 → 実際のアセットに差し替え）
+        // BTCアイコン
         Container(
           width: 24,
           height: 24,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             image: DecorationImage(
-              image: NetworkImage('https://placehold.co/24x24'),
+              image: AssetImage('assets/icons/btc.png'),
               fit: BoxFit.cover,
             ),
           ),
@@ -642,8 +656,7 @@ class LineChartPainter extends CustomPainter {
     final xStep = size.width / (n - 1);
 
     // Y軸: 0%〜100% を chartHeight にマッピング
-    double yFor(int pct) =>
-        chartBottom - (pct / 100.0) * chartHeight;
+    double yFor(int pct) => chartBottom - (pct / 100.0) * chartHeight;
 
     // X座標
     double xFor(int i) => i * xStep;
@@ -671,8 +684,7 @@ class LineChartPainter extends CustomPainter {
         final y0 = yFor(data[i - 1]);
         final x1 = xFor(i);
         final y1 = yFor(data[i]);
-        path.lineTo(x0 + (x1 - x0) * segProgress,
-                    y0 + (y1 - y0) * segProgress);
+        path.lineTo(x0 + (x1 - x0) * segProgress, y0 + (y1 - y0) * segProgress);
       }
 
       canvas.drawPath(path, paint);
@@ -686,8 +698,11 @@ class LineChartPainter extends CustomPainter {
         final cy = yFor(data[i]);
 
         // 点（丸）
-        canvas.drawCircle(Offset(cx, cy), 3.0,
-            Paint()..color = color.withValues(alpha: pointProgress));
+        canvas.drawCircle(
+          Offset(cx, cy),
+          3.0,
+          Paint()..color = color.withValues(alpha: pointProgress),
+        );
 
         // 数値ラベル（点の上）
         final tp = TextPainter(
@@ -704,8 +719,7 @@ class LineChartPainter extends CustomPainter {
           textAlign: TextAlign.center,
           textDirection: TextDirection.ltr,
         )..layout();
-        tp.paint(canvas,
-            Offset(cx - tp.width / 2, cy - tp.height - 4));
+        tp.paint(canvas, Offset(cx - tp.width / 2, cy - tp.height - 4));
       }
     }
 
@@ -728,8 +742,7 @@ class LineChartPainter extends CustomPainter {
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas,
-          Offset(xFor(i) - tp.width / 2, chartBottom + 4));
+      tp.paint(canvas, Offset(xFor(i) - tp.width / 2, chartBottom + 4));
     }
   }
 

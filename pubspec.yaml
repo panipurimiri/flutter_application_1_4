@@ -1,4 +1,4 @@
-name: flutter_application_1
+name: flutter_application_1_2
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
@@ -11,12 +11,15 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   google_fonts: ^8.0.2
-  # ここを1つだけにします(バージョンを最新の 1.0.5 に上げるのがおすすめです)
-  mesh: ^0.5.0
+  # ガラスエフェクト
+  flutter_glass_morphism: ^1.0.2
+  cupertino_native: ^0.1.1
   flutter_svg: ^2.0.10
-  liquid_glass_renderer: ^0.2.0-dev.4
+  mesh: ^0.5.0
   video_player: ^2.11.1
   lottie: ^3.3.3
+  intl: ^0.20.2
+  decimal: ^3.2.4
  
 dev_dependencies:
   flutter_test:

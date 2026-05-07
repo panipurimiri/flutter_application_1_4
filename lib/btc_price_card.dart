@@ -1,3 +1,4 @@
+import 'package:cupertino_native/cupertino_native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'dart:math' as math;
@@ -529,54 +530,15 @@ class _CoinPriceCardState extends State<CoinPriceCard>
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              height: 34,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEEEEEE),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                children: List.generate(periods.length, (i) {
-                  final isSelected = i == _selectedPeriod;
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => setState(() => _selectedPeriod = i),
-                      child: Container(
-                        margin: const EdgeInsets.all(3),
-                        decoration: isSelected
-                            ? BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(999),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x18000000),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
-                              )
-                            : null,
-                        child: Center(
-                          child: Text(
-                            periods[i],
-                            style: TextStyle(
-                              color: isSelected
-                                  ? const Color(0xFF333333)
-                                  : const Color(0xFF999999),
-                              fontSize: 12,
-                              fontFamily: _fontFamily,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+            child: CNSegmentedControl(
+              labels: periods,
+              selectedIndex: _selectedPeriod,
+              onValueChanged: (int index) {
+                if (index != _selectedPeriod) {
+                  setState(() => _selectedPeriod = index);
+                  _animController.forward(from: 0);
+                }
+              },
             ),
           ),
           const SizedBox(width: 8),

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'glass_bottom_nav.dart';
-import 'coin_list.dart';
-import 'main.dart' show BtcDetailPage;
-import 'assets_page.dart';
 import 'account_panel.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
@@ -302,7 +299,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildBottomNav(safeBottom, context),
+            child: _buildBottomNav(16, context),
           ),
         ],
       ),
@@ -1305,52 +1302,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomNav(double bottomPadding, BuildContext context) {
-    const items = [
-      GlassNavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
-      GlassNavItem(asset: 'assets/icons/listsearch.svg', label: '銘柄一覧'),
-      GlassNavItem(asset: 'assets/icons/order.svg', label: '注文'),
-      GlassNavItem(asset: 'assets/icons/assets.svg', label: '資産'),
-      GlassNavItem(asset: 'assets/icons/Othermenu.svg', label: 'メニュー'),
-    ];
     return LiquidGlassBottomNav(
       selectedIndex: 0,
-      onTap: (i) {
-        if (i == 1) {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => const CoinListPage(),
-              transitionDuration: const Duration(milliseconds: 250),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (ctx, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-            ),
-          );
-        } else if (i == 2) {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
-              transitionDuration: const Duration(milliseconds: 250),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (ctx, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-            ),
-          );
-        } else if (i == 3) {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => AssetsPage(),
-              transitionDuration: const Duration(milliseconds: 250),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (ctx, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-            ),
-          );
-        }
-      },
-      items: items,
       bottomPadding: bottomPadding,
     );
   }

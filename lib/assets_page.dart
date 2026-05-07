@@ -1,11 +1,7 @@
+import 'package:cupertino_native/cupertino_native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:ui'; // BackdropFilterとImageFilterに必要
-
 import 'glass_bottom_nav.dart';
-import 'main.dart' show BtcDetailPage;
-import 'coin_list.dart';
-import 'home_page.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
 
@@ -293,7 +289,7 @@ class _AssetsPageState extends State<AssetsPage> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildBottomNav(safeBottom, context),
+            child: _buildBottomNav(16, context),
           ),
         ],
       ),
@@ -501,54 +497,8 @@ class _AssetsPageState extends State<AssetsPage> {
   }
 
   Widget _buildBottomNav(double bottomPadding, BuildContext context) {
-    const items = [
-      GlassNavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
-      GlassNavItem(asset: 'assets/icons/listsearch.svg', label: '銘柄一覧'),
-      GlassNavItem(asset: 'assets/icons/order.svg', label: '注文'),
-      GlassNavItem(asset: 'assets/icons/assets.svg', label: '資産'),
-      GlassNavItem(asset: 'assets/icons/Othermenu.svg', label: 'メニュー'),
-    ];
     return LiquidGlassBottomNav(
       selectedIndex: 3,
-      onTap: (i) {
-        if (i == 3) return;
-        if (i == 0) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => const HomePage(),
-              transitionDuration: const Duration(milliseconds: 250),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (ctx, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-            ),
-            (route) => false,
-          );
-        } else if (i == 1) {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => const CoinListPage(),
-              transitionDuration: const Duration(milliseconds: 250),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (ctx, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-            ),
-          );
-        } else if (i == 2) {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (ctx, a1, a2) => const BtcDetailPage(),
-              transitionDuration: const Duration(milliseconds: 250),
-              reverseTransitionDuration: const Duration(milliseconds: 200),
-              transitionsBuilder: (ctx, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-            ),
-          );
-        }
-      },
-      items: items,
       bottomPadding: bottomPadding,
     );
   }
@@ -629,313 +579,13 @@ class _ChartSectionState extends State<_ChartSection>
                 .toList(),
           ),
           const SizedBox(height: 12),
-          _LiquidPeriodTabs(
+          CNSegmentedControl(
             labels: _kPeriodTabs,
             selectedIndex: widget.periodTab,
-            onTap: widget.onPeriodTap,
+            onValueChanged: widget.onPeriodTap,
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── ゴムアニメーション付き期間タブ（全体リキッドグラス化） ───────────────
-class _LiquidPeriodTabs extends StatefulWidget {
-  final List<String> labels;
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-  const _LiquidPeriodTabs({
-    required this.labels,
-    required this.selectedIndex,
-    required this.onTap,
-  });
-
-  @override
-  State<_LiquidPeriodTabs> createState() => _LiquidPeriodTabsState();
-}
-
-class _LiquidPeriodTabsState extends State<_LiquidPeriodTabs>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  late Animation<double> _leadAnim;
-  late Animation<double> _trailAnim;
-  late Animation<double> _fadeAnim;
-  late Animation<double> _bounceAnim;
-  late Animation<double> _scaleAnim;
-
-  int _prev = 0;
-  int _cur = 0;
-  bool _movingRight = true;
-
-  static const _kBarH = 36.0;
-  static const _kInset = 3.0;
-  static const _kRadius = 128.0;
-
-  void _startAnim(int from, int to) {
-    _movingRight = to > from;
-    final f = from.toDouble();
-    final t = to.toDouble();
-
-    _leadAnim = Tween<double>(begin: f, end: t).animate(
-      CurvedAnimation(
-        parent: _ctrl,
-        curve: const Interval(0.0, 0.42, curve: Curves.easeOut),
-      ),
-    );
-    _trailAnim = Tween<double>(begin: f, end: t).animate(
-      CurvedAnimation(
-        parent: _ctrl,
-        curve: const Interval(0.28, 0.82, curve: Curves.easeOut),
-      ),
-    );
-    _fadeAnim = CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.30, 0.65, curve: Curves.easeInOut),
-    );
-    _bounceAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 75),
-      TweenSequenceItem(
-        tween: Tween(
-          begin: 1.0,
-          end: 1.07,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 12,
-      ),
-      TweenSequenceItem(
-        tween: Tween(
-          begin: 1.07,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 13,
-      ),
-    ]).animate(_ctrl);
-    _scaleAnim =
-        TweenSequence<double>([
-          TweenSequenceItem(
-            tween: Tween(
-              begin: 1.0,
-              end: 1.18,
-            ).chain(CurveTween(curve: Curves.easeOut)),
-            weight: 40,
-          ),
-          TweenSequenceItem(
-            tween: Tween(
-              begin: 1.18,
-              end: 1.0,
-            ).chain(CurveTween(curve: Curves.easeInOut)),
-            weight: 60,
-          ),
-        ]).animate(
-          CurvedAnimation(parent: _ctrl, curve: const Interval(0.35, 0.88)),
-        );
-
-    _ctrl.forward(from: 0);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _cur = widget.selectedIndex;
-    _prev = widget.selectedIndex;
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 720),
-    );
-    _ctrl.value = 1.0;
-    final d = _cur.toDouble();
-    _leadAnim = AlwaysStoppedAnimation(d);
-    _trailAnim = AlwaysStoppedAnimation(d);
-    _fadeAnim = AlwaysStoppedAnimation(1.0);
-    _bounceAnim = AlwaysStoppedAnimation(1.0);
-    _scaleAnim = AlwaysStoppedAnimation(1.0);
-  }
-
-  @override
-  void didUpdateWidget(_LiquidPeriodTabs old) {
-    super.didUpdateWidget(old);
-    if (old.selectedIndex != widget.selectedIndex) {
-      _prev = _cur;
-      _cur = widget.selectedIndex;
-      _startAnim(_prev, _cur);
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final totalW = constraints.maxWidth;
-        final tabW = totalW / widget.labels.length;
-
-        // 【背景の全体トラック】リキッドグラス表現
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(_kRadius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
-            child: Container(
-              height: _kBarH,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFFD2D6DC).withValues(alpha: 0.4),
-                    const Color(0xFFD2D6DC).withValues(alpha: 0.1),
-                  ],
-                ),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  width: 1.0,
-                ),
-                borderRadius: BorderRadius.circular(_kRadius),
-              ),
-              child: AnimatedBuilder(
-                animation: _ctrl,
-                builder: (context, _) {
-                  final lead = _leadAnim.value;
-                  final trail = _trailAnim.value;
-
-                  final double pillLeft;
-                  final double pillRight;
-                  if (_movingRight) {
-                    pillLeft = trail * tabW + _kInset;
-                    pillRight = lead * tabW + tabW - _kInset;
-                  } else {
-                    pillLeft = lead * tabW + _kInset;
-                    pillRight = trail * tabW + tabW - _kInset;
-                  }
-                  final pillW = (pillRight - pillLeft).clamp(0.0, totalW);
-
-                  return Stack(
-                    children: [
-                      // 【選択チップ（動くゴムピル）】リキッドグラス表現
-                      Positioned(
-                        left: pillLeft,
-                        top: _kInset,
-                        bottom: _kInset,
-                        width: pillW,
-                        child: Transform.scale(
-                          scale: _bounceAnim.value,
-                          child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(_kRadius),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(_kRadius),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(
-                                sigmaX: 8.0,
-                                sigmaY: 8.0,
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.white.withValues(alpha: 0.85),
-                                      Colors.white.withValues(alpha: 0.35),
-                                    ],
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    width: 1.0,
-                                  ),
-                                  borderRadius: BorderRadius.circular(_kRadius),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      ),
-
-                      // ── タブラベル ────────────────────────────────
-                      Row(
-                        children: List.generate(widget.labels.length, (i) {
-                          const active = Color(0xFFBF0000);
-                          const inactive = Color(0xFF555555);
-                          final Color labelColor;
-                          if (_prev == _cur) {
-                            labelColor = i == _cur ? active : inactive;
-                          } else if (i == _cur) {
-                            labelColor = Color.lerp(
-                              inactive,
-                              active,
-                              _fadeAnim.value,
-                            )!;
-                          } else if (i == _prev) {
-                            labelColor = Color.lerp(
-                              active,
-                              inactive,
-                              _fadeAnim.value,
-                            )!;
-                          } else {
-                            labelColor = inactive;
-                          }
-
-                          final fw =
-                              (i == _cur ||
-                                  (_prev != _cur &&
-                                      i == _prev &&
-                                      _fadeAnim.value < 0.5))
-                              ? FontWeight.w600
-                              : FontWeight.w300;
-
-                          final double scale = (i == _cur && _prev != _cur)
-                              ? _scaleAnim.value
-                              : 1.0;
-
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () => widget.onTap(i),
-                              behavior: HitTestBehavior.opaque,
-                              child: SizedBox(
-                                height: _kBarH,
-                                child: Center(
-                                  child: Transform.scale(
-                                    scale: scale,
-                                    child: Text(
-                                      widget.labels[i],
-                                      style: TextStyle(
-                                        color: labelColor,
-                                        fontSize: 14,
-                                        fontFamily: _fontFamily,
-                                        fontWeight: fw,
-                                        height: 1,
-                                        letterSpacing: 0.14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -956,67 +606,34 @@ class _ChartPainter extends CustomPainter {
     final pts = data.sublist(0, visibleCount);
 
     final path = Path();
-    // ▼▼▼ 修正: 背景塗りつぶし用Pathを削除しました ▼▼▼
-    // final fillPath = Path();
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     for (int i = 0; i < pts.length; i++) {
       final x = (i / (totalPoints - 1)) * size.width;
       final y = size.height - pts[i] * size.height;
       if (i == 0) {
         path.moveTo(x, y);
-        // fillPath.moveTo(x, size.height); // 削除
-        // fillPath.lineTo(x, y); // 削除
       } else {
         path.lineTo(x, y);
-        // fillPath.lineTo(x, y); // 削除
       }
     }
 
-    // ▼▼▼ 修正: 背景塗りつぶし処理を削除しました ▼▼▼
-    // グラデーション塗りつぶし
-    /*
-    final lastX = ((pts.length - 1) / (totalPoints - 1)) * size.width;
-    fillPath.lineTo(lastX, size.height);
-    fillPath.close();
-
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFFEA0541).withValues(alpha: 0.18),
-          const Color(0xFFEA0541).withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(fillPath, fillPaint);
-    */
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
-    // ▼▼▼ 修正: ラインをグラデーションに変更 ▼▼▼
-    // ライン
     final linePaint = Paint()
-      // ..color = const Color(0xFFEA0541) // 単色を削除
-      ..strokeWidth =
-          3.0 // 若干太くしました（グラデーションを見えやすくするため）
+      ..strokeWidth = 3.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // 左から右への線形グラデーションShaderを作成してセット
     final gradientRect = Rect.fromLTWH(0, 0, size.width, size.height);
     linePaint.shader = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
       colors: [
-        const Color(0xFFFFA0B9), // 指定色1：薄いピンク
-        const Color(0xFFED1B8B), // 指定色2：濃いピンク
+        const Color(0xFFFFA0B9),
+        const Color(0xFFED1B8B),
       ],
     ).createShader(gradientRect);
 
     canvas.drawPath(path, linePaint);
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   }
 
   @override

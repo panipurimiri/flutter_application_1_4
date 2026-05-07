@@ -1,19 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'btc_price_card.dart';
-
 import 'survey_section.dart';
-
 import 'buy.dart';
-
-import 'coin_list.dart';
-
-import 'home_page.dart';
-
-import 'assets_page.dart';
-
 import 'mesh_background.dart';
-
 import 'glass_bottom_nav.dart';
 
 const _fontFamily = 'Hiragino Kaku Gothic Pro';
@@ -118,10 +108,12 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
                         const SizedBox(height: 8),
 
                         // アンケート・情報セクション
-                        const SurveySection(),
-
-                        // ボトムバー分の余白
-                        const SizedBox(height: 120),
+                        const Padding(
+                          padding: EdgeInsets.only(
+                            bottom: 180,
+                          ), // ボトムバーに隠れない程度の余白
+                          child: SurveySection(),
+                        ),
                       ],
                     ),
                   ),
@@ -272,7 +264,7 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
 
     const buttonNavGap = 8.0;
 
-    const navPillHeight = 58.0;
+    const navPillHeight = 82.0; // 実際のLiquidGlassBottomNavの高さに合わせて修正
 
     const bottomGap = 10.0;
 
@@ -287,21 +279,16 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
 
       child: Stack(
         children: [
-          // ── ナビゲーションバー（売買カードの下 20px から配置） ──
+          // ── 売る/買うカード（背景側） ──
+          Positioned(left: 0, right: 0, top: 0, child: _buildSellBuyBar()),
+
+          // ── ナビゲーションバー（最前面） ──
           Positioned(
             left: 0,
-
             right: 0,
-
-            top: navTop,
-
             bottom: 0,
-
-            child: _buildBottomNav(bottomPadding),
+            child: _buildBottomNav(16),
           ),
-
-          // ── 売る/買うカード（最上部に配置） ──
-          Positioned(left: 0, right: 0, top: 0, child: _buildSellBuyBar()),
         ],
       ),
     );
@@ -480,78 +467,10 @@ class _BtcDetailPageState extends State<BtcDetailPage> {
   }
 
   Widget _buildBottomNav(double bottomPadding) {
-    const items = [
-      GlassNavItem(asset: 'assets/icons/Home.svg', label: 'ホーム'),
-
-      GlassNavItem(asset: 'assets/icons/listsearch.svg', label: '銘柄一覧'),
-
-      GlassNavItem(asset: 'assets/icons/order.svg', label: '注文'),
-
-      GlassNavItem(asset: 'assets/icons/assets.svg', label: '資産'),
-
-      GlassNavItem(asset: 'assets/icons/Othermenu.svg', label: 'メニュー'),
-    ];
-
     return LiquidGlassBottomNav(
       selectedIndex: _navIndex,
-
-      onTap: _onNavTap,
-
-      items: items,
-
       bottomPadding: bottomPadding,
     );
-  }
-
-  void _onNavTap(int i) {
-    if (i == 0) {
-      Navigator.push(
-        context,
-
-        PageRouteBuilder(
-          pageBuilder: (context, a1, a2) => const HomePage(),
-
-          transitionDuration: const Duration(milliseconds: 250),
-
-          reverseTransitionDuration: const Duration(milliseconds: 200),
-
-          transitionsBuilder: (context, anim, a2, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
-      );
-    } else if (i == 1) {
-      Navigator.push(
-        context,
-
-        PageRouteBuilder(
-          pageBuilder: (context, a1, a2) => const CoinListPage(),
-
-          transitionDuration: const Duration(milliseconds: 250),
-
-          reverseTransitionDuration: const Duration(milliseconds: 200),
-
-          transitionsBuilder: (context, anim, a2, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
-      );
-    } else if (i == 3) {
-      Navigator.push(
-        context,
-
-        PageRouteBuilder(
-          pageBuilder: (context, a1, a2) => AssetsPage(),
-
-          transitionDuration: const Duration(milliseconds: 250),
-
-          reverseTransitionDuration: const Duration(milliseconds: 200),
-
-          transitionsBuilder: (context, anim, a2, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
-      );
-    } else {
-      setState(() => _navIndex = i);
-    }
   }
 
   String _formatPrice(double price) {
