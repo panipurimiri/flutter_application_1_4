@@ -88,6 +88,7 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   void _toggleMode() {
     // 1) Snapshot OUTGOING values (current mode, before flip)
     _prevMainText = _isBtcMode ? _btcDisplayValue : _formattedAmount;
+    _rawDigits = ''; // reset input on mode switch
     _prevMainSuffix = _isBtcMode ? 'BTC' : '円';
     _prevSubText = _isBtcMode ? '$_jpyFromBtc 円' : '$_btcFromJpy BTC';
 
@@ -559,7 +560,7 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
           : (totalWidth - actualWidth) / 2;
     }
 
-    final amountAreaHeight = targetFs;
+    const amountAreaHeight = _kMaxFs;
     final isEmpty = _rawDigits.isEmpty;
     final amountColor = isEmpty
         ? const Color(0xFFB0B0B0)
@@ -581,35 +582,29 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
                   height: amountAreaHeight,
                   child: Stack(
                     children: [
-                      Positioned.fill(
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            left: leftPad,
-                            right: rightPad,
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: _AmountDisplay(
-                              formatted: _isBtcMode
-                                  ? _btcDisplayValue
-                                  : _formattedAmount,
-                              suffix: _isBtcMode ? 'BTC' : '円',
-                              fontSize: targetFs,
-                              color: amountColor,
-                            ),
+                      Positioned(
+                        left: leftPad,
+                        right: rightPad,
+                        bottom: 0,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.bottomLeft,
+                          child: _AmountDisplay(
+                            formatted: _isBtcMode
+                                ? _btcDisplayValue
+                                : _formattedAmount,
+                            suffix: _isBtcMode ? 'BTC' : '円',
+                            fontSize: targetFs,
+                            color: amountColor,
                           ),
                         ),
                       ),
                       Positioned(
                         right: 0,
-                        top: 0,
                         bottom: 0,
-                        child: Center(
-                          child: _CurrencyToggleBadge(
-                            isBtcMode: _isBtcMode,
-                            onToggle: _toggleMode,
-                          ),
+                        child: _CurrencyToggleBadge(
+                          isBtcMode: _isBtcMode,
+                          onToggle: _toggleMode,
                         ),
                       ),
                     ],
