@@ -559,7 +559,7 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
           : (totalWidth - actualWidth) / 2;
     }
 
-    const amountAreaHeight = _kMaxFs;
+    final amountAreaHeight = targetFs;
     final isEmpty = _rawDigits.isEmpty;
     final amountColor = isEmpty
         ? const Color(0xFFB0B0B0)
