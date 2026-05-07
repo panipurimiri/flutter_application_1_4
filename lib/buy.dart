@@ -688,16 +688,13 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                // Toggle Button
+                // Toggle Button — bottom-aligned to match static layout
                 Positioned(
                   right: 0,
-                  top: 0,
-                  height: amountAreaHeight,
-                  child: Center(
-                    child: _CurrencyToggleBadge(
-                      isBtcMode: _isBtcMode,
-                      onToggle: _toggleMode,
-                    ),
+                  bottom: amountToSubSpacing + 20,
+                  child: _CurrencyToggleBadge(
+                    isBtcMode: _isBtcMode,
+                    onToggle: _toggleMode,
                   ),
                 ),
               ],
