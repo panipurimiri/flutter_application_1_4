@@ -83,8 +83,7 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
   // ── Frozen layout metrics (locked at animation start) ──
   double _prevTargetFs = _kMaxFs;
   double _nextTargetFs = _kMaxFs;
-  bool _frozenShouldPinRight = false;
-  double _frozenCenterAlignX = 0.0;
+  double _frozenLeftPad = 0.0;
 
   void _toggleMode() {
     // 1) Snapshot OUTGOING values (current mode, before flip)
@@ -144,13 +143,9 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
       _nextTargetFs,
     );
     final centeredRightEdge = totalWidth / 2 + actualWidth / 2;
-    _frozenShouldPinRight = centeredRightEdge > maxAmountWidth;
-    final slack = maxAmountWidth - actualWidth;
-    _frozenCenterAlignX = _rawDigits.isEmpty
-        ? (btcIconWidth + gap) / (maxAmountWidth - 1)
-        : slack > 1.0
-        ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
-        : 0.0;
+    _frozenLeftPad = (centeredRightEdge > maxAmountWidth)
+        ? (maxAmountWidth - actualWidth).clamp(0.0, double.infinity)
+        : (totalWidth - actualWidth) / 2;
 
     // 5) Start animation & rebuild together – no gap frame
     _isAnimating = true;
@@ -356,12 +351,28 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
                                   _buildToggleTabs(),
                                   const SizedBox(height: 16),
                                   _buildAmountInputArea(sw),
-                                  if (!_isBtcMode) ...[
-                                    const SizedBox(height: 20),
-                                    _buildQuickButtons(),
-                                    const SizedBox(height: 16),
-                                  ] else
-                                    const SizedBox(height: 40),
+                                  AnimatedSize(
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeInOut,
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 200),
+                                      switchInCurve: Curves.easeOut,
+                                      switchOutCurve: Curves.easeIn,
+                                      child: !_isBtcMode
+                                          ? Column(
+                                              key: const ValueKey('jpy-buttons'),
+                                              children: [
+                                                const SizedBox(height: 20),
+                                                _buildQuickButtons(),
+                                                const SizedBox(height: 16),
+                                              ],
+                                            )
+                                          : const SizedBox(
+                                              key: ValueKey('btc-spacer'),
+                                              height: 40,
+                                            ),
+                                    ),
+                                  ),
                                   _buildPointCard(),
                                   const SizedBox(height: 8),
                                   _buildBalanceCard(),
@@ -533,24 +544,19 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
 
     // When animating, use frozen values; otherwise compute live
     final double targetFs;
-    final bool shouldPinRight;
-    final double centerAlignX;
+    final double leftPad;
+    const rightPad = btcIconWidth + gap;
 
     if (_isAnimating) {
-      targetFs = _nextTargetFs; // For live calculation, we'll use next as base
-      shouldPinRight = _frozenShouldPinRight;
-      centerAlignX = _frozenCenterAlignX;
+      targetFs = _nextTargetFs;
+      leftPad = _frozenLeftPad;
     } else {
       targetFs = _computeTargetFs(maxAmountWidth);
       final actualWidth = _measureAmountWidth(targetFs);
       final centeredRightEdge = totalWidth / 2 + actualWidth / 2;
-      shouldPinRight = centeredRightEdge > maxAmountWidth;
-      final slack = maxAmountWidth - actualWidth;
-      centerAlignX = _rawDigits.isEmpty
-          ? (btcIconWidth + gap) / (maxAmountWidth - 1)
-          : slack > 1.0
-          ? ((btcIconWidth + gap) / slack).clamp(-1.0, 1.0)
-          : 0.0;
+      leftPad = (centeredRightEdge > maxAmountWidth)
+          ? (maxAmountWidth - actualWidth).clamp(0.0, double.infinity)
+          : (totalWidth - actualWidth) / 2;
     }
 
     const amountAreaHeight = _kMaxFs;
@@ -576,23 +582,21 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: btcIconWidth + gap,
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.center,
-                              child: _AmountDisplay(
-                                formatted: _isBtcMode
-                                    ? _btcDisplayValue
-                                    : _formattedAmount,
-                                suffix: _isBtcMode ? 'BTC' : '円',
-                                fontSize: targetFs,
-                                color: amountColor,
-                              ),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: leftPad,
+                            right: rightPad,
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: _AmountDisplay(
+                              formatted: _isBtcMode
+                                  ? _btcDisplayValue
+                                  : _formattedAmount,
+                              suffix: _isBtcMode ? 'BTC' : '円',
+                              fontSize: targetFs,
+                              color: amountColor,
                             ),
                           ),
                         ),
@@ -1303,69 +1307,69 @@ class _CurrencyToggleBadgeState extends State<_CurrencyToggleBadge>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _rotateAnim;
-  bool _localBtcMode = false;
+  // Tracks the label text: switches at midpoint of rotation (value >= 0.5)
+  bool _labelIsBtc = false;
 
   @override
   void initState() {
     super.initState();
-    _localBtcMode = widget.isBtcMode;
+    _labelIsBtc = widget.isBtcMode;
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _rotateAnim = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _rotateAnim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
+    );
+    _controller.addListener(_onAnimationTick);
+  }
+
+  void _onAnimationTick() {
+    // Switch label at 90-degree midpoint
+    final targetLabel = widget.isBtcMode;
+    if (_controller.value >= 0.5 && _labelIsBtc != targetLabel) {
+      setState(() => _labelIsBtc = targetLabel);
+    } else if (_controller.value < 0.5 && _labelIsBtc == targetLabel && _controller.isAnimating) {
+      // Handle reverse: if somehow animating back before midpoint, revert label
+      setState(() => _labelIsBtc = !targetLabel);
+    }
   }
 
   @override
   void didUpdateWidget(_CurrencyToggleBadge old) {
     super.didUpdateWidget(old);
-    if (widget.isBtcMode != _localBtcMode) {
-      // 親からの変更（クイックボタンなどでモードが変わる場合など）に同期
-      setState(() => _localBtcMode = widget.isBtcMode);
+    if (widget.isBtcMode != old.isBtcMode) {
+      _controller.forward(from: 0).then((_) {
+        if (mounted) _controller.value = 0;
+      });
     }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onAnimationTick);
     _controller.dispose();
     super.dispose();
-  }
-
-  void _handleTap() {
-    _controller.forward(from: 0).then((_) {
-      _controller.value = 0; // Reset to 0 so it's not upside down
-      setState(() => _localBtcMode = !_localBtcMode);
-      widget.onToggle();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _handleTap,
+      onTap: widget.onToggle, // call immediately, animation driven by didUpdateWidget
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedBuilder(
             animation: _rotateAnim,
-            builder: (context, _) {
-              return Transform.rotate(
-                angle: _rotateAnim.value * 3.141592653589793, // 180度回転
-                child: const Icon(
-                  Icons.sync,
-                  color: Color(0xFF333333),
-                  size: 24,
-                ),
-              );
-            },
+            builder: (context, _) => Transform.rotate(
+              angle: _rotateAnim.value * 3.141592653589793,
+              child: const Icon(Icons.sync, color: Color(0xFF333333), size: 24),
+            ),
           ),
           const SizedBox(height: 2),
           Text(
-            _localBtcMode ? '円' : 'BTC',
+            _labelIsBtc ? '円' : 'BTC',
             style: _hiraFont.copyWith(
               color: const Color(0xFF333333),
               fontSize: 11,
