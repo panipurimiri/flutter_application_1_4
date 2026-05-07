@@ -352,28 +352,12 @@ class _BuyPageState extends State<BuyPage> with TickerProviderStateMixin {
                                   _buildToggleTabs(),
                                   const SizedBox(height: 16),
                                   _buildAmountInputArea(sw),
-                                  AnimatedSize(
-                                    duration: const Duration(milliseconds: 250),
-                                    curve: Curves.easeInOut,
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 200),
-                                      switchInCurve: Curves.easeOut,
-                                      switchOutCurve: Curves.easeIn,
-                                      child: !_isBtcMode
-                                          ? Column(
-                                              key: const ValueKey('jpy-buttons'),
-                                              children: [
-                                                const SizedBox(height: 20),
-                                                _buildQuickButtons(),
-                                                const SizedBox(height: 16),
-                                              ],
-                                            )
-                                          : const SizedBox(
-                                              key: ValueKey('btc-spacer'),
-                                              height: 40,
-                                            ),
-                                    ),
-                                  ),
+                                  if (!_isBtcMode) ...[
+                                    const SizedBox(height: 20),
+                                    _buildQuickButtons(),
+                                    const SizedBox(height: 16),
+                                  ] else
+                                    const SizedBox(height: 40),
                                   _buildPointCard(),
                                   const SizedBox(height: 8),
                                   _buildBalanceCard(),
